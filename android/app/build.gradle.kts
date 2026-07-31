@@ -2,6 +2,10 @@ plugins {
     id("com.android.application")
 }
 
+// Single source of truth for every Kotlin artifact in the graph (see the dependencies
+// block for why this project, which has no Kotlin source, has to pin it at all).
+val kotlinVersion = "1.9.24"
+
 android {
     namespace = "com.marathonrecomp.launcher"
     compileSdk = 35
@@ -90,4 +94,31 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.core:core:1.13.1")
     implementation("androidx.activity:activity:1.9.3")
+
+    // ---------------------------------------------------------------------
+    // Kotlin standard library alignment.
+    //
+    // This project has no Kotlin source at all, but AndroidX pulls kotlin-stdlib
+    // in transitively. Kotlin 1.8.0 merged kotlin-stdlib-jdk7 and -jdk8 back into
+    // kotlin-stdlib, so a graph holding kotlin-stdlib >= 1.8 together with an older
+    // kotlin-stdlib-jdk7/jdk8 (1.6.21, dragged in by some other transitive) ends up
+    // with the same classes twice, and dexing fails with:
+    //
+    //   Duplicate class kotlin.collections.jdk8.CollectionsJDK8Kt ...
+    //
+    // The BOM aligns every Kotlin artifact on one version, and the constraints raise
+    // the jdk7/jdk8 artifacts to that version, where they are empty shims that simply
+    // depend on kotlin-stdlib. Nothing is excluded, so any dependency that genuinely
+    // needs them still resolves.
+    // ---------------------------------------------------------------------
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:$kotlinVersion"))
+
+    constraints {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion") {
+            because("kotlin-stdlib-jdk7 was merged into kotlin-stdlib in Kotlin 1.8")
+        }
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion") {
+            because("kotlin-stdlib-jdk8 was merged into kotlin-stdlib in Kotlin 1.8")
+        }
+    }
 }
