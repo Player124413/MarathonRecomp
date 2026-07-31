@@ -58,3 +58,6 @@
 [submodule "thirdparty/ffmpeg-core"]
 	path = thirdparty/ffmpeg-core
 	url = https://github.com/sonicnext-dev/ffmpeg-core
+[submodule "android/box64"]
+	path = android/box64
+	url = https://github.com/ptitSeb/box64.git

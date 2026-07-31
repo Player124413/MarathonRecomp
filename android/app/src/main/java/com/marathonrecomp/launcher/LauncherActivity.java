@@ -211,9 +211,23 @@ public class LauncherActivity extends AppCompatActivity {
         Emulator emulator = prefs.emulator();
         boolean runtimeReady = EmulatorInstaller.isInstalled(this, emulator);
 
-        runtimeStatus.setText(runtimeReady
-                ? getString(R.string.runtime_ready, emulator.displayName)
-                : getString(R.string.runtime_not_installed, emulator.displayName));
+        if (emulator.bundled) {
+            runtimeStatus.setText(runtimeReady
+                    ? getString(R.string.runtime_bundled, emulator.displayName)
+                    : getString(R.string.runtime_bundled_missing, emulator.displayName));
+        } else if (!runtimeReady) {
+            runtimeStatus.setText(getString(R.string.runtime_not_installed, emulator.displayName));
+        } else if (EmulatorInstaller.requiresExternalExec(this, emulator)) {
+            // Imported binaries live in the app's data directory, which Android 10+ mounts
+            // no-exec. Say so now rather than failing with "permission denied" at launch.
+            runtimeStatus.setText(getString(R.string.runtime_imported_noexec, emulator.displayName));
+        } else {
+            runtimeStatus.setText(getString(R.string.runtime_ready, emulator.displayName));
+        }
+
+        // A bundled backend has nothing to import.
+        findViewById(R.id.install_runtime_button)
+                .setVisibility(emulator.bundled ? View.GONE : View.VISIBLE);
 
         String gameDir = prefs.gameDir();
         boolean gameReady = gameDir != null

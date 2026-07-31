@@ -4,14 +4,15 @@ An Android launcher for [Marathon Recompiled](../README.md), inspired by
 [RimDroid](https://github.com/udarmolota/RimDroid).
 
 Marathon Recompiled is a native **x86_64 Linux** program. Phones are ARM64, so the
-launcher runs it through a translation layer — and you choose which one:
+launcher runs it through a translation layer — and you choose which one from a dropdown
+on the home screen:
 
-| Backend | Notes |
-|---|---|
-| **Box64** | The compatible choice. Starts on almost anything, slower on heavy code. |
-| **FEX‑Emu** | Usually faster thanks to its JIT, but wants a recent device and a proper x86_64 rootfs. |
+| Backend | How it ships | Notes |
+|---|---|---|
+| **Box64** | **Built into the APK** — nothing to install | Officially supports Android. Compiled from the pinned `android/box64` submodule as part of the app build. |
+| **FEX‑Emu** | Optional, imported by you | Can be faster, but **upstream FEX does not support Android and says it never will** — see [below](#why-fex-is-not-bundled). |
 
-The setting is a plain dropdown on the home screen and takes effect on the next launch.
+Box64 is the default and works the moment the app is installed.
 
 > **No game data is included or distributed.** You supply your own legally acquired copy,
 > exactly as with the desktop builds.
@@ -22,7 +23,8 @@ The setting is a plain dropdown on the home screen and takes effect on the next 
 
 ## Features
 
-- **Backend choice** — Box64 or FEX‑Emu, switchable at any time.
+- **Box64 built in** — compiled into the APK, no runtime download, no Termux.
+- **Backend choice** — Box64 or an imported FEX‑Emu, switchable at any time.
 - **On-screen Xbox 360 pad** — two analog sticks, d-pad with diagonals, A/B/X/Y,
   LB/RB/LT/RT, Start/Back and L3/R3.
 - **Layout editor** — drag to move, sliders for size and opacity, rebind any button,
@@ -68,27 +70,96 @@ launcher hides the overlay — there is no path where both fight over the same s
 
 ---
 
-## Setup
+## How the backends are delivered
 
-### 1. Install a runtime package
+This is the part Android makes awkward, so it is worth stating plainly.
 
-Neither backend ships inside the APK: they are separate GPL projects with their own
-release cadence, and a stale bundled copy helps nobody. Import one once, per backend:
+### The W^X rule
 
-*Settings → choose the backend → **Import runtime package (.zip)***
+Since **Android 10** an app may not `exec()` anything from its own writable storage
+(`filesDir`, `cacheDir`, external storage — all mounted no-exec). The only place an app
+can execute a binary from is the **APK's native library directory**, which the package
+installer extracts read-only with the execute bit set.
 
-The zip must contain the backend executable (`box64` or `FEXInterpreter`) and, ideally,
-an x86_64 rootfs:
+The installer, however, only extracts files matching **`lib*.so`**. So the trick — the same
+one Termux and every launcher of this kind uses — is to *name the executable like a
+library*:
 
 ```
-box64                      <- or FEXInterpreter
+box64 (an ordinary ARM64 PIE executable)  ->  packaged as libbox64.so
+```
+
+It is not converted to a shared library; only the file name changes. At runtime the
+launcher executes
+`getApplicationInfo().nativeLibraryDir + "/libbox64.so"`.
+
+Two things make this work, and both are already set:
+
+- `android:extractNativeLibs="true"` in the manifest, and `useLegacyPackaging = true` for
+  jniLibs in `app/build.gradle.kts` — without them the library stays compressed inside the
+  APK and there is no real file to execute.
+- The CMake rename in `app/src/main/cpp/CMakeLists.txt`
+  (`PREFIX "lib"`, `SUFFIX ".so"`).
+
+### Box64 — built in
+
+`android/box64` is a submodule pinned to release **v0.4.3-4**, built by the app's own
+CMake with `-DANDROID=ON -DARM64=ON`. box64 supports Android upstream, so this is just a
+normal cross-compile; the result is packaged as `libbox64.so` and the user never sees a
+setup step.
+
+To build without it (much faster iteration on the UI):
+
+```bash
+./gradlew assembleDebug -PbundleBox64=false      # see the flag in app/build.gradle.kts
+```
+
+### Why FEX is not bundled
+
+FEX-Emu **cannot be bundled the same way today**, and this is not a matter of effort:
+
+- Its build system has **no Android target at all** — `grep -i android` across FEX's
+  CMake comes back empty, and there is no NDK toolchain path.
+- The upstream [FAQ](https://wiki.fex-emu.com/index.php/FAQ) is explicit:
+  *"FEX-Emu's target is Linux on Linux devices. Android is not a target and will never be
+  a target."* It expects glibc, SysV IPC and syscalls that Android removes or blocks
+  through SECCOMP.
+- Working Android FEX builds exist only as **unofficial ports**
+  (e.g. [Fex-Android](https://github.com/AllPlatform/Fex-Android),
+  [FEXDroid](https://github.com/gamextra4u/FEXDroid)), and those run inside Termux + proot
+  rather than as a plain APK.
+
+Shipping a broken FEX would be worse than not shipping one, so the launcher keeps FEX as
+an **optional, user-supplied runtime**:
+
+*Choose FEX-Emu → **Import runtime package (.zip)***
+
+```
+FEXInterpreter
 rootfs/
   lib/x86_64-linux-gnu/...
   usr/lib/x86_64-linux-gnu/...
 ```
 
-It is unpacked to `filesDir/runtime/<backend>/`, the binary is marked executable, and the
-importer refuses entries that try to escape that directory.
+It is unpacked to `filesDir/runtime/fex/`, and the importer rejects entries that try to
+escape that directory.
+
+**Be aware of the consequence of the W^X rule above:** a FEX binary unpacked into
+`filesDir` cannot be executed on Android 10+. The launcher detects this and says so
+directly instead of failing with a bare "permission denied". FEX is therefore realistically
+usable only if you are on an older device, or if you supply a build that the app can load
+rather than exec. If you want FEX properly bundled, the honest route is to port it to the
+NDK and build it into the APK exactly like box64 — the launcher's backend abstraction is
+already in place for that, and only `Emulator.FEX.bundled` would need to flip to `true`.
+
+---
+
+## Setup
+
+### 1. Backend
+
+Box64 needs no setup. Only pick *Import runtime package* if you deliberately want FEX and
+have read the section above.
 
 ### 2. Point the launcher at the game
 

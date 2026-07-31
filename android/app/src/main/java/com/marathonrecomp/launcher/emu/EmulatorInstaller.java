@@ -1,6 +1,7 @@
 package com.marathonrecomp.launcher.emu;
 
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 
 import java.io.File;
@@ -14,16 +15,20 @@ import java.util.zip.ZipInputStream;
 /**
  * Where the emulator backends live on disk, and how a user-supplied package gets unpacked.
  *
- * <p>Neither box64 nor FEX is bundled in the APK: they are separate GPL projects with their
- * own release cadence, and shipping a stale copy helps nobody. The launcher instead expects
- * a runtime package (a zip containing the backend binary and an x86_64 rootfs) to be
- * imported once from Settings, and installs it under:</p>
+ * <p>The two backends arrive by different routes:</p>
  *
- * <pre>
- *   filesDir/runtime/box64/box64
- *   filesDir/runtime/fex/FEXInterpreter
- *   filesDir/runtime/rootfs/...
- * </pre>
+ * <ul>
+ *   <li><b>box64</b> is compiled into the APK from the pinned submodule and lives in the
+ *       app's native library directory as {@code libbox64.so}. Android extracts that
+ *       directory read-only with the execute bit set, which is the only place a modern
+ *       Android version will let an app {@code exec()} anything. Nothing to install.</li>
+ *   <li><b>FEX-Emu</b> has no official Android support, so it is optional and imported by
+ *       the user as a zip. It is unpacked under {@code filesDir/runtime/fex/}.</li>
+ * </ul>
+ *
+ * <p>Note that a FEX binary unpacked into {@code filesDir} cannot be executed directly on
+ * Android 10+ (W^X); {@link #requiresExternalExec} reports that so the UI can explain it
+ * instead of failing with a bare "permission denied".</p>
  */
 public final class EmulatorInstaller {
 
@@ -46,14 +51,44 @@ public final class EmulatorInstaller {
         return new File(runtimeDir(context), emulator.id);
     }
 
+    /**
+     * Absolute path of the backend's executable.
+     *
+     * <p>Bundled backends resolve to the APK's native library directory, which is the
+     * only exec-friendly location on Android 10+.</p>
+     */
     public static File binaryFor(Context context, Emulator emulator) {
+        if (emulator.bundled) {
+            return new File(context.getApplicationInfo().nativeLibraryDir, emulator.binaryName);
+        }
+
         return new File(dirFor(context, emulator), emulator.binaryName);
     }
 
     public static boolean isInstalled(Context context, Emulator emulator) {
         File bin = binaryFor(context, emulator);
+
+        if (emulator.bundled) {
+            // Packaged with the app: present and executable, or the APK is broken.
+            return bin.isFile() && bin.canExecute();
+        }
+
         return bin.isFile() && bin.length() > 0;
     }
+
+    /**
+     * True when the backend is installed somewhere Android will not let us execute from.
+     *
+     * <p>Only ever true for imported runtimes: since Android 10 the app's data directory is
+     * mounted no-exec, so an imported binary can only run on an older device (or through a
+     * loader that maps it itself). Worth telling the user up front.</p>
+     */
+    public static boolean requiresExternalExec(Context context, Emulator emulator) {
+        return !emulator.bundled
+                && isInstalled(context, emulator)
+                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+    }
+
 
     /**
      * Unpacks a runtime zip for the given backend.
@@ -62,6 +97,10 @@ public final class EmulatorInstaller {
      */
     public static boolean installFromZip(Context context, Emulator emulator, InputStream zipStream)
             throws IOException {
+        if (emulator.bundled) {
+            throw new IOException(emulator.displayName + " ships with the app and cannot be replaced.");
+        }
+
         File target = dirFor(context, emulator);
 
         if (!target.exists() && !target.mkdirs()) {

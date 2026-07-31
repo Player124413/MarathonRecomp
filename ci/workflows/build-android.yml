@@ -25,6 +25,7 @@ on:
       - "android/**"
       - "MarathonRecomp/hid/virtual_pad_shm.h"
       - ".github/workflows/build-android.yml"
+      - ".gitmodules"
   pull_request:
     paths:
       - "android/**"
@@ -46,13 +47,26 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        # No submodules needed: the launcher only includes one header from the game tree.
+        with:
+          # box64 is built into the APK from android/box64; the rest of the game's
+          # submodules are not needed, so only that one is fetched below.
+          submodules: false
+
+      - name: Fetch the box64 submodule
+        run: git submodule update --init --depth 1 android/box64
+        working-directory: ${{ github.workspace }}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: temurin
+
+      - name: Set up Python
+        # box64's build generates its wrapper tables with a Python script.
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Set up the Android SDK
         uses: android-actions/setup-android@v3

@@ -7,9 +7,12 @@
     <string name="section_game">Файлы игры</string>
     <string name="section_input">Управление</string>
 
-    <string name="emulator_help">Marathon Recompiled — это сборка Linux x86_64, поэтому нужен слой трансляции. Box64 совместим почти со всем; FEX-Emu обычно быстрее, но требует свежего устройства и полноценного rootfs.</string>
+    <string name="emulator_help">Marathon Recompiled — это сборка Linux x86_64, поэтому нужен слой трансляции. Box64 встроен в приложение и работает сразу. FEX-Emu может быть быстрее, но официальной поддержки Android у него нет и его нужно импортировать самому.</string>
 
     <!-- рантайм -->
+    <string name="runtime_bundled">%1$s встроен в приложение — устанавливать ничего не нужно.</string>
+    <string name="runtime_bundled_missing">%1$s отсутствует в этой сборке: APK собран без сабмодуля box64.</string>
+    <string name="runtime_imported_noexec">%1$s установлен, но Android 10+ запрещает запуск из памяти приложения. Подробности в README — официальной поддержки Android у FEX нет.</string>
     <string name="runtime_ready">%1$s установлен и готов к работе.</string>
     <string name="runtime_not_installed">%1$s ещё не установлен — импортируйте пакет ниже.</string>
     <string name="runtime_installing">Устанавливается рантайм %1$s…</string>
@@ -50,6 +53,7 @@
     <string name="error_no_game_dir">Сначала выберите папку с игрой.</string>
     <string name="error_game_binary_missing">Нет исполняемого файла MarathonRecomp в %1$s</string>
     <string name="error_runtime_missing">%1$s не установлен — сначала импортируйте пакет рантайма.</string>
+    <string name="error_runtime_not_executable">%1$s найден по пути %2$s, но Android отказывается его запускать. Начиная с Android 10 запускать можно только бинарники из APK — используйте встроенный Box64.</string>
     <string name="error_vpad">Не удалось создать мост геймпада.</string>
     <string name="error_spawn_failed">Не удалось запустить %1$s.</string>
     <string name="error_no_file_picker">На устройстве нет файлового менеджера.</string>

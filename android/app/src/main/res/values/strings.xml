@@ -8,9 +8,12 @@
     <string name="section_game">Game files</string>
     <string name="section_input">Controls</string>
 
-    <string name="emulator_help">Marathon Recompiled is an x86_64 Linux build, so it needs a translation layer. Box64 is the most compatible; FEX-Emu is usually faster but needs a recent device and a proper rootfs.</string>
+    <string name="emulator_help">Marathon Recompiled is an x86_64 Linux build, so it needs a translation layer. Box64 is built into the app and works out of the box. FEX-Emu can be faster, but it has no official Android support and must be imported yourself.</string>
 
     <!-- runtime -->
+    <string name="runtime_bundled">%1$s is built into the app — nothing to install.</string>
+    <string name="runtime_bundled_missing">%1$s is missing from this build. The APK was built without the box64 submodule.</string>
+    <string name="runtime_imported_noexec">%1$s is installed, but Android 10+ blocks running it from app storage. See the README — FEX has no official Android support.</string>
     <string name="runtime_ready">%1$s is installed and ready.</string>
     <string name="runtime_not_installed">%1$s is not installed yet — import its runtime package below.</string>
     <string name="runtime_installing">Installing the %1$s runtime…</string>
@@ -51,6 +54,7 @@
     <string name="error_no_game_dir">Select the folder holding the game first.</string>
     <string name="error_game_binary_missing">No MarathonRecomp executable at %1$s</string>
     <string name="error_runtime_missing">%1$s is not installed — import its runtime package first.</string>
+    <string name="error_runtime_not_executable">%1$s is present at %2$s but Android refuses to execute it. Since Android 10 only binaries shipped inside the APK may run; use the built-in Box64.</string>
     <string name="error_vpad">Cannot create the controller bridge.</string>
     <string name="error_spawn_failed">%1$s could not be started.</string>
     <string name="error_no_file_picker">No file picker is available on this device.</string>

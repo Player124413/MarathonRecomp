@@ -83,9 +83,15 @@ public final class EmulatorEnvironment {
         File lib = new File(rootfs, "usr/lib/x86_64-linux-gnu");
 
         // ---- shared, backend independent -------------------------------------------
+        final String nativeLibDir = context.getApplicationInfo().nativeLibraryDir;
+
         env.put("HOME", context.getFilesDir().getAbsolutePath());
         env.put("TMPDIR", context.getCacheDir().getAbsolutePath());
-        env.put("PATH", "/system/bin:" + runtimeDir.getAbsolutePath());
+        env.put("PATH", nativeLibDir + ":/system/bin:" + runtimeDir.getAbsolutePath());
+
+        // The emulator binary is an ordinary ARM64 executable that links against the
+        // NDK runtime shipped in the same folder, so bionic has to be able to find it.
+        env.put("LD_LIBRARY_PATH", nativeLibDir + ":/system/lib64:/vendor/lib64");
 
         // Tell the game where to find the launcher's pad.
         env.put("MARATHON_RECOMP_VPAD", vpadFile.getAbsolutePath());
@@ -128,11 +134,17 @@ public final class EmulatorEnvironment {
                 env.put("FEX_SILENTLOG", "1");
             }
         } else {
-            // box64 needs to be pointed at the guest libraries explicitly.
-            StringBuilder libPath = new StringBuilder(lib.getAbsolutePath());
+            // box64 needs to be pointed at the guest libraries explicitly. The game ships
+            // its own x86_64 .so files next to the executable, and an imported rootfs (if
+            // the user added one) supplies the rest of the system libraries.
+            StringBuilder libPath = new StringBuilder(gameDir.getAbsolutePath());
+            libPath.append(':').append(new File(gameDir, "lib").getAbsolutePath());
+            libPath.append(':').append(lib.getAbsolutePath());
             libPath.append(':').append(new File(rootfs, "lib/x86_64-linux-gnu").getAbsolutePath());
-            libPath.append(':').append(gameDir.getAbsolutePath());
 
+            // The bundled box64 lives in the APK's native library folder alongside the
+            // launcher's own libs; keep that on the host search path so its dependencies
+            // (libc++_shared and friends) resolve.
             env.put("BOX64_LD_LIBRARY_PATH", libPath.toString());
             env.put("BOX64_PATH", gameDir.getAbsolutePath());
             env.put("BOX64_LOG", prefs.isEmulatorLoggingEnabled() ? "1" : "0");

@@ -95,6 +95,16 @@ public final class GameLauncher {
         Emulator emulator = environment.emulator();
 
         if (!environment.isReady()) {
+            File binary = environment.binary();
+
+            // Distinguish "not installed" from "installed but Android will not run it":
+            // since Android 10 the app's data directory is mounted no-exec, so an imported
+            // runtime is present yet unusable. That deserves its own message.
+            if (binary.isFile() && !binary.canExecute()) {
+                return context.getString(R.string.error_runtime_not_executable,
+                        emulator.displayName, binary.getAbsolutePath());
+            }
+
             return context.getString(R.string.error_runtime_missing, emulator.displayName);
         }
 

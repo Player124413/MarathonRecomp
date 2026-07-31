@@ -15,10 +15,16 @@ android {
 
         externalNativeBuild {
             cmake {
-                // 16 KB page support: required for Android 15+ devices.
+                // box64 is C++-aware in places and links the shared STL; "none" would
+                // break its build, so the app uses the same STL it does.
                 arguments += listOf(
-                    "-DANDROID_STL=none",
-                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                    "-DANDROID_STL=c++_shared",
+                    // 16 KB page support: required for Android 15+ devices.
+                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                    // -PbundleBox64=false builds the launcher without box64, which is a
+                    // lot quicker when iterating on the UI.
+                    "-DMARATHON_DROID_BUNDLE_BOX64=" +
+                        if (project.findProperty("bundleBox64") == "false") "OFF" else "ON"
                 )
                 cFlags += listOf("-std=gnu11")
             }
@@ -34,6 +40,15 @@ android {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
             version = "3.22.1"
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // box64 is shipped as libbox64.so and has to end up on disk as a real,
+            // executable file — Android only permits exec() from nativeLibraryDir, and
+            // only when the libraries were extracted rather than loaded from the APK.
+            useLegacyPackaging = true
         }
     }
 
