@@ -5,16 +5,19 @@ because the GitHub App used to push this branch is not allowed to create or modi
 workflow files (`refusing to allow a GitHub App to create or update workflow ... without
 workflows permission`).
 
-**To enable them, move them into place and push:**
+**The Android workflow is already live** at `.github/workflows/build-android.yml` — it was
+uploaded through the GitHub web UI, which is the simplest way around the permission above.
+
+To enable the Linux one the same way, either upload it through the web UI or move it
+locally:
 
 ```bash
-git mv ci/workflows/build-linux.yml   .github/workflows/build-linux.yml
-git mv ci/workflows/build-android.yml .github/workflows/build-android.yml
-git commit -m "Enable the Linux and Android build workflows"
+git mv ci/workflows/build-linux.yml .github/workflows/build-linux.yml
+git commit -m "Enable the Linux build workflow"
 git push
 ```
 
-Both then appear under the repository's **Actions** tab and can be started with
+It then appears under the repository's **Actions** tab and can be started with
 **Run workflow**.
 
 ---
@@ -34,9 +37,10 @@ Builds the desktop game with Clang + Ninja + vcpkg, matching the presets already
   point halfway through.
 - ccache and the vcpkg download/package directories are cached between runs.
 
-## `build-android.yml` — launcher APK
+## `build-android.yml` — launcher APK (already active)
 
-Builds the Android launcher in [`android/`](../android/README.md).
+Lives in `.github/workflows/`. Builds the Android launcher in
+[`android/`](../android/README.md).
 
 - JDK 17, SDK 35, NDK r27, CMake 3.22; Gradle caches are reused between runs.
 - **Needs no secrets at all** — the launcher never contains or touches game data.

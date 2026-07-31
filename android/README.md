@@ -241,7 +241,7 @@ cd android
 ```
 
 Requirements: JDK 17, Android SDK 35, NDK r27, CMake 3.22. CI does all of this in
-[`ci/workflows/build-android.yml`](../ci/workflows/build-android.yml) (see [ci/README.md](../ci/README.md) to activate) — it needs
+[`.github/workflows/build-android.yml`](../.github/workflows/build-android.yml) — it needs
 no secrets, because the launcher never touches game data.
 
 The launcher must be built from inside the MarathonRecomp checkout: its `CMakeLists.txt`
