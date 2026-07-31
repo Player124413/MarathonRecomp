@@ -47,3 +47,28 @@ Lives in `.github/workflows/`. Builds the Android launcher in
 - Manual runs choose `debug`, `release`, or `both`; it also runs automatically when
   anything under `android/` or the shared pad ABI header changes.
 - Uploads the APK as an artifact and writes its size to the run summary.
+
+
+---
+
+## Optional: verify the APK contains box64
+
+`android/verify-apk.sh` asserts that `libbox64.so` is actually packaged (and is still an
+ARM64 executable despite the `.so` name). A green build alone does not prove this — a bad
+rename or packaging flag yields a valid APK with no emulator inside, and that only shows
+up on device.
+
+Run it locally:
+
+```bash
+android/verify-apk.sh          # defaults to the debug APK path
+```
+
+To run it in CI, add this step to `.github/workflows/build-android.yml` right after
+*Build the debug APK* (it has to be edited through the GitHub web UI, for the permission
+reason above):
+
+```yaml
+      - name: Verify box64 is packaged
+        run: ../android/verify-apk.sh app/build/outputs/apk/debug/marathondroid-debug.apk
+```
