@@ -1,0 +1,45 @@
+# CI workflows (activation required)
+
+These two workflows are ready to run but live here instead of `.github/workflows/`,
+because the GitHub App used to push this branch is not allowed to create or modify
+workflow files (`refusing to allow a GitHub App to create or update workflow ... without
+workflows permission`).
+
+**To enable them, move them into place and push:**
+
+```bash
+git mv ci/workflows/build-linux.yml   .github/workflows/build-linux.yml
+git mv ci/workflows/build-android.yml .github/workflows/build-android.yml
+git commit -m "Enable the Linux and Android build workflows"
+git push
+```
+
+Both then appear under the repository's **Actions** tab and can be started with
+**Run workflow**.
+
+---
+
+## `build-linux.yml` — Linux build
+
+Builds the desktop game with Clang + Ninja + vcpkg, matching the presets already in
+`CMakePresets.json`.
+
+- **Manual runs** let you pick the preset (`linux-release`, `linux-relwithdebinfo`,
+  `linux-debug`); it also runs on pushes to `main`, `master` and `arena/**`.
+- **Secrets:** building the game itself needs `ASSET_REPO` and `ASSET_REPO_TOKEN` — the
+  private repository holding `default.xex` and the shader archives that the recompilers
+  consume. The workflow checks for them first: with the secrets it builds and uploads the
+  `MarathonRecomp` binary; without them it still configures the project and builds
+  `XenonRecomp` / `XenosRecomp`, and prints a warning rather than failing at a confusing
+  point halfway through.
+- ccache and the vcpkg download/package directories are cached between runs.
+
+## `build-android.yml` — launcher APK
+
+Builds the Android launcher in [`android/`](../android/README.md).
+
+- JDK 17, SDK 35, NDK r27, CMake 3.22; Gradle caches are reused between runs.
+- **Needs no secrets at all** — the launcher never contains or touches game data.
+- Manual runs choose `debug`, `release`, or `both`; it also runs automatically when
+  anything under `android/` or the shared pad ABI header changes.
+- Uploads the APK as an artifact and writes its size to the run summary.
