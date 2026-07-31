@@ -57,14 +57,11 @@ public final class EmulatorEnvironment {
     public List<String> buildCommand(File gameBinary, List<String> extraArgs) {
         List<String> command = new ArrayList<>();
 
+        // Both backends take the guest executable as their first argument; where they
+        // differ is the environment (FEX wants FEX_ROOTFS, box64 wants BOX64_LD_LIBRARY_PATH),
+        // which buildEnvironment() handles.
         command.add(binary().getAbsolutePath());
-
-        if (emulator() == Emulator.FEX) {
-            // FEXInterpreter takes the guest binary directly; the rootfs comes from the env.
-            command.add(gameBinary.getAbsolutePath());
-        } else {
-            command.add(gameBinary.getAbsolutePath());
-        }
+        command.add(gameBinary.getAbsolutePath());
 
         if (extraArgs != null) {
             command.addAll(extraArgs);

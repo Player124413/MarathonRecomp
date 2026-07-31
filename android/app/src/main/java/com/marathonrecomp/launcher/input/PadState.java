@@ -100,6 +100,13 @@ public final class PadState {
      * @param connected false makes the game fall back to "no controller connected"
      */
     public void push(boolean connected) {
+        // The layout editor runs without a game (and therefore without the shared memory
+        // block), so pushing there would hit an unlinked native method.
+        if (!com.marathonrecomp.launcher.NativeBridge.isLoaded()
+                || !com.marathonrecomp.launcher.NativeBridge.vpadIsOpen()) {
+            return;
+        }
+
         int b, lt, rt, lx, ly, rx, ry, src;
 
         synchronized (this) {

@@ -151,20 +151,6 @@ public:
 std::array<Controller, 4> g_controllers;
 Controller* g_activeController;
 
-// True while at least one real SDL controller is open. The Android launcher uses this
-// (indirectly, through the virtual pad going quiet) to decide whether the on-screen
-// touch controls should be shown.
-static bool AnyPhysicalControllerConnected()
-{
-    for (const auto& controller : g_controllers)
-    {
-        if (controller.controller)
-            return true;
-    }
-
-    return false;
-}
-
 inline Controller* EnsureController(uint32_t dwUserIndex)
 {
     if (!g_controllers[dwUserIndex].controller)
