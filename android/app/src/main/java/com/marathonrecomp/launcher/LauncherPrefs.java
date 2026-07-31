@@ -14,7 +14,7 @@ public final class LauncherPrefs {
     private static final String KEY_COMPATIBILITY = "compatibility_mode";
     private static final String KEY_EMU_LOGGING = "emulator_logging";
     private static final String KEY_FEX_TSO = "fex_tso";
-    private static final String KEY_DRIVER_OVERRIDE = "driver_override";
+    private static final String KEY_TURNIP = "turnip_enabled";
     private static final String KEY_HAPTICS = "haptics";
     private static final String KEY_TOUCH_CONTROLS = "touch_controls";
     private static final String KEY_GAME_DIR = "game_dir";
@@ -64,12 +64,18 @@ public final class LauncherPrefs {
         prefs.edit().putBoolean(KEY_FEX_TSO, enabled).apply();
     }
 
-    public boolean isDriverOverrideEnabled() {
-        return prefs.getBoolean(KEY_DRIVER_OVERRIDE, true);
+    /**
+     * Use the imported Turnip / custom Vulkan driver instead of the system one.
+     *
+     * <p>On by default: whenever a driver has actually been imported it is almost
+     * certainly the reason the user imported it. Ignored when none is installed.</p>
+     */
+    public boolean isTurnipEnabled() {
+        return prefs.getBoolean(KEY_TURNIP, true);
     }
 
-    public void setDriverOverrideEnabled(boolean enabled) {
-        prefs.edit().putBoolean(KEY_DRIVER_OVERRIDE, enabled).apply();
+    public void setTurnipEnabled(boolean enabled) {
+        prefs.edit().putBoolean(KEY_TURNIP, enabled).apply();
     }
 
     // ---------------------------------------------------------------- input ----

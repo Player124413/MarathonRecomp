@@ -24,6 +24,8 @@ Box64 is the default and works the moment the app is installed.
 ## Features
 
 - **Box64 built in** — compiled into the APK, no runtime download, no Termux.
+- **Install the game from a .zip** — unpacked by the launcher, no manual file shuffling.
+- **Turnip support** — import Mesa's Adreno Vulkan driver and the launcher wires it in.
 - **Backend choice** — Box64 or an imported FEX‑Emu, switchable at any time.
 - **On-screen Xbox 360 pad** — two analog sticks, d-pad with diagonals, A/B/X/Y,
   LB/RB/LT/RT, Start/Back and L3/R3.
@@ -161,14 +163,43 @@ already in place for that, and only `Emulator.FEX.bundled` would need to flip to
 Box64 needs no setup. Only pick *Import runtime package* if you deliberately want FEX and
 have read the section above.
 
-### 2. Point the launcher at the game
+### 2. Install the game
 
-*__Select the game folder__* — pick the folder holding the `MarathonRecomp` executable
-and its data.
+Two ways, whichever suits you:
 
-The folder must be on **internal shared storage**. The emulated game opens files with
-plain `open()`, so it cannot read through Android's Storage Access Framework; the launcher
-tells you instead of failing later with a confusing error.
+- **Install the game from a .zip** (recommended) — pick a zipped Linux build and the
+  launcher unpacks it into its own storage. It copes with the usual archive shapes: the
+  executable at the top level, or wrapped in a single folder (which is flattened so the
+  game data stays beside the binary). Entries that try to escape the target directory are
+  rejected.
+- **Select the game folder** — for a build you already unpacked yourself.
+
+An installed copy always takes priority over a picked folder, and *Remove the installed
+game* deletes it again (saves are kept).
+
+> **Why the app's own storage is allowed here.** Android's no-exec rule applies to
+> `exec()`, and box64 never `exec()`s the game: it opens it with `fopen(..., "rb")` and
+> maps the segments itself (`box64/src/core.c`). So the game binary needs no execute
+> permission and no special location — only box64 does, and it lives in the APK.
+
+### 2b. Graphics: Turnip (optional but recommended)
+
+Marathon Recompiled renders with **Vulkan**. Under emulation the system Vulkan driver is
+often the weak point, so the launcher can use **Turnip** — Mesa's open-source Vulkan
+driver for Adreno — instead:
+
+*Graphics → **Import a Vulkan driver (Turnip)*** — accepts a bare `.so` or an
+AdrenoTools-style `.zip`.
+
+The driver is wired in the standard way: the launcher writes a Vulkan **ICD manifest** and
+points `VK_ICD_FILENAMES` / `VK_DRIVER_FILES` at it. No linker hooks are needed, because
+the game runs as its own process rather than inside the app.
+
+- **Turnip is Adreno-only.** The launcher probes the GPU and, on a Mali/Xclipse/PowerVR
+  device, says so instead of letting the driver fail later.
+- Untick *Use the imported Vulkan driver* to fall back to the system one at any time.
+- There is deliberately **no Zink** here: Zink translates OpenGL to Vulkan, and this game
+  is already Vulkan-native, so it would only add a pointless layer.
 
 ### 3. Play
 

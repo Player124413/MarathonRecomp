@@ -90,4 +90,23 @@
     <string name="editor_exit_message">Есть несохранённые изменения раскладки.</string>
     <string name="editor_exit_save">Сохранить</string>
     <string name="editor_exit_discard">Не сохранять</string>
+    <string name="section_graphics">Графика</string>
+    <string name="action_install_game">Установить игру из .zip</string>
+    <string name="action_remove_game">Удалить установленную игру</string>
+    <string name="game_installing">Распаковка игры…</string>
+    <string name="game_installing_file">Распаковка: %1$s</string>
+    <string name="game_installed">Игра установлена (файлов: %1$d).</string>
+    <string name="game_install_failed">Установка не удалась: %1$s</string>
+    <string name="game_installed_internal">Установлена в приложении (%1$s)</string>
+    <string name="game_remove_title">Удалить игру?</string>
+    <string name="game_remove_message">Распакованные файлы игры будут удалены. Сохранения останутся.</string>
+    <string name="turnip_help">Turnip — открытый драйвер Vulkan из Mesa для видеоядер Adreno. Под эмуляцией он обычно работает заметно лучше системного. Импортируйте сборку Turnip (.so или .zip из AdrenoTools).</string>
+    <string name="option_use_turnip">Использовать импортированный драйвер Vulkan</string>
+    <string name="action_install_driver">Импортировать драйвер Vulkan (Turnip)</string>
+    <string name="driver_none">Свой драйвер не установлен — используется системный Vulkan.</string>
+    <string name="driver_installed">Драйвер Vulkan: %1$s</string>
+    <string name="driver_installing">Импорт драйвера…</string>
+    <string name="driver_install_failed">Не удалось импортировать драйвер: %1$s</string>
+    <string name="gpu_detected">Видеоядро: %1$s</string>
+    <string name="gpu_not_adreno">Видеоядро: %1$s — Turnip поддерживает только Adreno, оставьте системный драйвер.</string>
 </resources>

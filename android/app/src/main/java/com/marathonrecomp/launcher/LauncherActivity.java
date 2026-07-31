@@ -21,6 +21,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.marathonrecomp.launcher.emu.Emulator;
 import com.marathonrecomp.launcher.emu.EmulatorInstaller;
+import com.marathonrecomp.launcher.gpu.GpuInfo;
+import com.marathonrecomp.launcher.gpu.VulkanDriver;
 
 import java.io.File;
 import java.io.InputStream;
@@ -33,6 +35,11 @@ public class LauncherActivity extends AppCompatActivity {
 
     private static final String TAG = "MarathonDroid";
 
+    /** Some file managers report zips with odd MIME types, so accept anything. */
+    private static final String[] ARCHIVE_MIME_TYPES = {
+            "application/zip", "application/octet-stream", "*/*"
+    };
+
     private LauncherPrefs prefs;
 
     private Spinner emulatorSpinner;
@@ -42,10 +49,15 @@ public class LauncherActivity extends AppCompatActivity {
     private CheckBox fexTso;
     private CheckBox touchControls;
     private CheckBox haptics;
+    private CheckBox useTurnip;
+    private TextView gpuStatus;
     private Button playButton;
+    private Button removeGameButton;
 
     private ActivityResultLauncher<Uri> pickGameDir;
     private ActivityResultLauncher<String[]> pickRuntimeZip;
+    private ActivityResultLauncher<String[]> pickGameZip;
+    private ActivityResultLauncher<String[]> pickDriver;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -62,7 +74,10 @@ public class LauncherActivity extends AppCompatActivity {
         fexTso = findViewById(R.id.fex_tso);
         touchControls = findViewById(R.id.touch_controls);
         haptics = findViewById(R.id.haptics);
+        useTurnip = findViewById(R.id.use_turnip);
+        gpuStatus = findViewById(R.id.gpu_status);
         playButton = findViewById(R.id.play_button);
+        removeGameButton = findViewById(R.id.remove_game_button);
 
         setupEmulatorSpinner();
         setupPickers();
@@ -77,7 +92,15 @@ public class LauncherActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.install_runtime_button).setOnClickListener(v ->
-                pickRuntimeZip.launch(new String[] { "application/zip", "application/octet-stream", "*/*" }));
+                pickRuntimeZip.launch(ARCHIVE_MIME_TYPES));
+
+        findViewById(R.id.install_game_button).setOnClickListener(v ->
+                pickGameZip.launch(ARCHIVE_MIME_TYPES));
+
+        findViewById(R.id.install_driver_button).setOnClickListener(v ->
+                pickDriver.launch(ARCHIVE_MIME_TYPES));
+
+        removeGameButton.setOnClickListener(v -> confirmRemoveGame());
 
         findViewById(R.id.edit_controls_button).setOnClickListener(v ->
                 startActivity(new Intent(this, ControlsEditorActivity.class)));
@@ -137,6 +160,9 @@ public class LauncherActivity extends AppCompatActivity {
 
         haptics.setChecked(prefs.isHapticsEnabled());
         haptics.setOnCheckedChangeListener((v, checked) -> prefs.setHapticsEnabled(checked));
+
+        useTurnip.setChecked(prefs.isTurnipEnabled());
+        useTurnip.setOnCheckedChangeListener((v, checked) -> prefs.setTurnipEnabled(checked));
     }
 
     private void setupPickers() {
@@ -163,6 +189,131 @@ public class LauncherActivity extends AppCompatActivity {
                         installRuntime(uri);
                     }
                 });
+
+        pickGameZip = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(), uri -> {
+                    if (uri != null) {
+                        installGame(uri);
+                    }
+                });
+
+        pickDriver = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(), uri -> {
+                    if (uri != null) {
+                        installDriver(uri);
+                    }
+                });
+    }
+
+    /**
+     * Unpacks a zipped Linux build into the app's own storage.
+     *
+     * <p>Allowed to live there because box64 reads the game with fopen() and maps it
+     * itself rather than exec()ing it, so Android's no-exec data directory is not in the
+     * way — see {@link GameInstaller}.</p>
+     */
+    private void installGame(Uri uri) {
+        final AlertDialog progress = new AlertDialog.Builder(this)
+                .setTitle(R.string.game_installing)
+                .setMessage("")
+                .setCancelable(false)
+                .show();
+
+        new Thread(() -> {
+            GameInstaller.Result result;
+
+            try (InputStream in = getContentResolver().openInputStream(uri)) {
+                if (in == null) {
+                    result = null;
+                } else {
+                    result = GameInstaller.install(this, in, (name, bytes) ->
+                            runOnUiThread(() -> progress.setMessage(
+                                    getString(R.string.game_installing_file, name))));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Game install failed", e);
+                result = GameInstaller.Result.failure(String.valueOf(e.getMessage()));
+            }
+
+            final GameInstaller.Result r = result;
+
+            runOnUiThread(() -> {
+                progress.dismiss();
+
+                if (r != null && r.success) {
+                    // The unpacked copy takes priority, so clear any stale folder choice.
+                    prefs.setGameDir(null);
+                    toast(getString(R.string.game_installed, r.fileCount));
+                } else {
+                    toast(getString(R.string.game_install_failed,
+                            r != null ? r.error : "cannot read the archive"));
+                }
+
+                refreshStatus();
+            });
+        }, "game-install").start();
+    }
+
+    /** Imports a Turnip / custom Vulkan driver (.so or an AdrenoTools .zip). */
+    private void installDriver(Uri uri) {
+        toast(getString(R.string.driver_installing));
+
+        new Thread(() -> {
+            String error;
+            String name = queryDisplayName(uri);
+
+            try (InputStream in = getContentResolver().openInputStream(uri)) {
+                error = in == null
+                        ? "cannot read the file"
+                        : VulkanDriver.install(this, name, in);
+            } catch (Exception e) {
+                Log.e(TAG, "Driver import failed", e);
+                error = String.valueOf(e.getMessage());
+            }
+
+            final String failure = error;
+
+            runOnUiThread(() -> {
+                if (failure == null) {
+                    prefs.setTurnipEnabled(true);
+                    useTurnip.setChecked(true);
+                } else {
+                    toast(getString(R.string.driver_install_failed, failure));
+                }
+
+                refreshStatus();
+            });
+        }, "driver-install").start();
+    }
+
+    private void confirmRemoveGame() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.game_remove_title)
+                .setMessage(R.string.game_remove_message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.action_remove_game, (d, w) -> {
+                    GameInstaller.uninstall(this);
+                    refreshStatus();
+                })
+                .show();
+    }
+
+    /** Best-effort display name for a picked document, used to spot ".zip" vs ".so". */
+    private String queryDisplayName(Uri uri) {
+        try (android.database.Cursor c = getContentResolver()
+                .query(uri, null, null, null, null)) {
+            if (c != null && c.moveToFirst()) {
+                int index = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+
+                if (index >= 0) {
+                    return c.getString(index);
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Cannot read the name of " + uri, e);
+        }
+
+        return uri.getLastPathSegment();
     }
 
     // ---------------------------------------------------------------- actions ----
@@ -229,13 +380,25 @@ public class LauncherActivity extends AppCompatActivity {
         findViewById(R.id.install_runtime_button)
                 .setVisibility(emulator.bundled ? View.GONE : View.VISIBLE);
 
+        // An unpacked install wins over a picked folder, matching GameLauncher.
+        boolean installed = GameInstaller.isInstalled(this);
         String gameDir = prefs.gameDir();
-        boolean gameReady = gameDir != null
+        boolean pickedReady = !installed && gameDir != null
                 && new File(gameDir, GameLauncher.GAME_BINARY).isFile();
+        boolean gameReady = installed || pickedReady;
 
-        gameStatus.setText(gameReady
-                ? getString(R.string.game_ready, gameDir)
-                : getString(R.string.game_not_selected));
+        if (installed) {
+            gameStatus.setText(getString(R.string.game_installed_internal,
+                    GameInstaller.gameDir(this).getAbsolutePath()));
+        } else if (pickedReady) {
+            gameStatus.setText(getString(R.string.game_ready, gameDir));
+        } else {
+            gameStatus.setText(getString(R.string.game_not_selected));
+        }
+
+        removeGameButton.setVisibility(installed ? View.VISIBLE : View.GONE);
+
+        refreshGraphicsStatus();
 
         // FEX's TSO switch is meaningless under box64.
         fexTso.setVisibility(emulator == Emulator.FEX ? View.VISIBLE : View.GONE);
@@ -266,6 +429,38 @@ public class LauncherActivity extends AppCompatActivity {
         }
 
         return null;
+    }
+
+    /** GPU line plus the state of the imported Vulkan driver. */
+    private void refreshGraphicsStatus() {
+        String driver = VulkanDriver.installedName(this);
+        boolean hasDriver = driver != null;
+
+        useTurnip.setEnabled(hasDriver);
+
+        // Probe the GPU once, off the UI thread, then fold it into the status line.
+        new Thread(() -> {
+            GpuInfo gpu = GpuInfo.query();
+
+            runOnUiThread(() -> {
+                String gpuLine;
+
+                if (!gpu.isKnown()) {
+                    gpuLine = getString(R.string.gpu_detected, gpu.displayName());
+                } else if (gpu.isTurnipIncompatible()) {
+                    // Turnip is Adreno-only; say so rather than letting it fail later.
+                    gpuLine = getString(R.string.gpu_not_adreno, gpu.displayName());
+                } else {
+                    gpuLine = getString(R.string.gpu_detected, gpu.displayName());
+                }
+
+                String driverLine = hasDriver
+                        ? getString(R.string.driver_installed, driver)
+                        : getString(R.string.driver_none);
+
+                gpuStatus.setText(gpuLine + "\n" + driverLine);
+            });
+        }, "gpu-probe").start();
     }
 
     private void toast(String message) {

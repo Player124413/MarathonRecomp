@@ -89,11 +89,61 @@
             android:textSize="13sp" />
 
         <Button
-            android:id="@+id/pick_game_button"
+            android:id="@+id/install_game_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
+            android:text="@string/action_install_game" />
+
+        <Button
+            android:id="@+id/pick_game_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="@string/action_pick_game" />
+
+        <Button
+            android:id="@+id/remove_game_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/action_remove_game"
+            android:visibility="gone" />
+
+        <!-- ========================= graphics ========================= -->
+
+        <TextView
+            style="@style/SectionHeader"
+            android:text="@string/section_graphics" />
+
+        <TextView
+            android:id="@+id/gpu_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/turnip_help"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <CheckBox
+            android:id="@+id/use_turnip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/option_use_turnip"
+            android:textColor="@color/text_primary" />
+
+        <Button
+            android:id="@+id/install_driver_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/action_install_driver" />
 
         <!-- ============================= input ============================= -->
 

@@ -79,13 +79,22 @@ public final class GameLauncher {
             return context.getString(R.string.error_native_missing);
         }
 
-        String gameDirPath = prefs.gameDir();
+        // A game installed from a zip lives in the app's own storage and always wins; the
+        // folder picker stays as the alternative for a build already unpacked on the phone.
+        File gameDir;
 
-        if (gameDirPath == null) {
-            return context.getString(R.string.error_no_game_dir);
+        if (GameInstaller.isInstalled(context)) {
+            gameDir = GameInstaller.gameDir(context);
+        } else {
+            String gameDirPath = prefs.gameDir();
+
+            if (gameDirPath == null) {
+                return context.getString(R.string.error_no_game_dir);
+            }
+
+            gameDir = new File(gameDirPath);
         }
 
-        File gameDir = new File(gameDirPath);
         File gameBinary = new File(gameDir, GAME_BINARY);
 
         if (!gameBinary.isFile()) {

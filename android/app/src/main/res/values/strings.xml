@@ -91,4 +91,23 @@
     <string name="editor_exit_message">You have unsaved changes to the control layout.</string>
     <string name="editor_exit_save">Save</string>
     <string name="editor_exit_discard">Discard</string>
+    <string name="section_graphics">Graphics</string>
+    <string name="action_install_game">Install the game from a .zip</string>
+    <string name="action_remove_game">Remove the installed game</string>
+    <string name="game_installing">Unpacking the game…</string>
+    <string name="game_installing_file">Unpacking: %1$s</string>
+    <string name="game_installed">Game installed (%1$d files).</string>
+    <string name="game_install_failed">Install failed: %1$s</string>
+    <string name="game_installed_internal">Installed in the app (%1$s)</string>
+    <string name="game_remove_title">Remove the game?</string>
+    <string name="game_remove_message">The unpacked game files will be deleted. Your saves are kept.</string>
+    <string name="turnip_help">Turnip is Mesa\'s open-source Vulkan driver for Adreno GPUs. It usually works far better than the system driver under emulation. Import a Turnip build (.so or an AdrenoTools .zip).</string>
+    <string name="option_use_turnip">Use the imported Vulkan driver</string>
+    <string name="action_install_driver">Import a Vulkan driver (Turnip)</string>
+    <string name="driver_none">No custom driver — using the system Vulkan driver.</string>
+    <string name="driver_installed">Vulkan driver: %1$s</string>
+    <string name="driver_installing">Importing the driver…</string>
+    <string name="driver_install_failed">Driver import failed: %1$s</string>
+    <string name="gpu_detected">GPU: %1$s</string>
+    <string name="gpu_not_adreno">GPU: %1$s — Turnip only supports Adreno, so keep the system driver.</string>
 </resources>

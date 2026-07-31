@@ -3,6 +3,7 @@ package com.marathonrecomp.launcher.emu;
 import android.content.Context;
 
 import com.marathonrecomp.launcher.LauncherPrefs;
+import com.marathonrecomp.launcher.gpu.VulkanDriver;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -96,24 +97,43 @@ public final class EmulatorEnvironment {
         // Tell the game where to find the launcher's pad.
         env.put("MARATHON_RECOMP_VPAD", vpadFile.getAbsolutePath());
 
-        // Rendering: the game speaks Vulkan, and Turnip/whatever driver the user picked
-        // is exposed through the standard loader variables.
+        // Rendering: the game speaks Vulkan, so the driver is selected the standard way
+        // through the loader's ICD mechanism.
         env.put("SDL_VIDEODRIVER", "x11");
         env.put("DISPLAY", ":0");
         env.put("SDL_AUDIODRIVER", "pulseaudio");
         env.put("PULSE_SERVER", "127.0.0.1");
 
-        File icd = new File(runtimeDir, "vulkan/icd.d");
+        if (prefs.isTurnipEnabled() && VulkanDriver.isInstalled(context)) {
+            // Point the loader at the imported driver (Turnip) instead of the system one.
+            // VK_ICD_FILENAMES wins over the default search path, and VK_DRIVER_FILES is
+            // the newer spelling — set both so old and new loaders agree.
+            String icd = VulkanDriver.icdFile(context).getAbsolutePath();
 
-        if (icd.isDirectory()) {
-            env.put("VK_ICD_FILENAMES", listJsonFiles(icd));
+            env.put("VK_ICD_FILENAMES", icd);
+            env.put("VK_DRIVER_FILES", icd);
+
+            // Turnip reads its own knobs from TU_DEBUG; leave it clean by default, since
+            // the useful values there are debugging aids that cost performance.
+            env.put("MESA_VK_WSI_PRESENT_MODE", "mailbox");
+
+            // Prepend the driver's folder so its own dependencies resolve.
+            String existing = env.get("LD_LIBRARY_PATH");
+            String driverDir = VulkanDriver.driverDir(context).getAbsolutePath();
+
+            env.put("LD_LIBRARY_PATH",
+                    existing == null || existing.isEmpty() ? driverDir : driverDir + ":" + existing);
+        } else {
+            File icd = new File(runtimeDir, "vulkan/icd.d");
+
+            if (icd.isDirectory()) {
+                env.put("VK_ICD_FILENAMES", listJsonFiles(icd));
+            }
         }
 
-        if (prefs.isDriverOverrideEnabled()) {
-            env.put("MESA_LOADER_DRIVER_OVERRIDE", "zink");
-            env.put("GALLIUM_DRIVER", "zink");
-            env.put("ZINK_DESCRIPTORS", "lazy");
-        }
+        // No Zink here on purpose: Zink translates OpenGL to Vulkan, and Marathon
+        // Recompiled already renders with Vulkan natively. Forcing it would add a
+        // pointless translation layer. (Launchers for OpenGL games do need it.)
 
         // ---- backend specific -------------------------------------------------------
         if (emulator() == Emulator.FEX) {
