@@ -132,6 +132,7 @@ set(MARATHON_RECOMP_APU_CXX_SOURCES
 
 set(MARATHON_RECOMP_HID_CXX_SOURCES
     "hid/hid.cpp"
+    "hid/virtual_pad.cpp"
     "hid/driver/sdl_hid.cpp"
 )
 

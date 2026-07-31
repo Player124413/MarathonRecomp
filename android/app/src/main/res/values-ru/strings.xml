@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_subtitle">Android-лаунчер для Marathon Recompiled (Sonic \'06)</string>
+
+    <!-- разделы -->
+    <string name="section_emulator">Слой эмуляции</string>
+    <string name="section_game">Файлы игры</string>
+    <string name="section_input">Управление</string>
+
+    <string name="emulator_help">Marathon Recompiled — это сборка Linux x86_64, поэтому нужен слой трансляции. Box64 совместим почти со всем; FEX-Emu обычно быстрее, но требует свежего устройства и полноценного rootfs.</string>
+
+    <!-- рантайм -->
+    <string name="runtime_ready">%1$s установлен и готов к работе.</string>
+    <string name="runtime_not_installed">%1$s ещё не установлен — импортируйте пакет ниже.</string>
+    <string name="runtime_installing">Устанавливается рантайм %1$s…</string>
+    <string name="runtime_installed">%1$s установлен.</string>
+    <string name="runtime_install_failed">Установка не удалась: %1$s</string>
+    <string name="action_install_runtime">Импортировать пакет рантайма (.zip)</string>
+
+    <!-- игра -->
+    <string name="game_ready">Папка игры: %1$s</string>
+    <string name="game_not_selected">Папка игры ещё не выбрана.</string>
+    <string name="action_pick_game">Выбрать папку с игрой</string>
+
+    <!-- настройки -->
+    <string name="option_compatibility">Режим совместимости (медленнее, но запускается чаще)</string>
+    <string name="option_fex_tso">FEX: строгий порядок памяти (TSO)</string>
+    <string name="option_touch_controls">Показывать сенсорное управление</string>
+    <string name="option_haptics">Вибрация</string>
+    <string name="gamepad_note">Подключите геймпад — сенсорное управление исчезнет автоматически; отключите его, и кнопки вернутся.</string>
+
+    <string name="action_edit_controls">Редактировать сенсорное управление</string>
+    <string name="action_play">Играть</string>
+
+    <!-- игровой экран -->
+    <string name="game_starting">Запуск игры…</string>
+    <string name="game_exited">Игра завершилась (код %1$d)</string>
+    <string name="gamepad_connected">Геймпад подключён — сенсорные кнопки скрыты</string>
+    <string name="gamepad_disconnected">Геймпад отключён — сенсорные кнопки возвращены</string>
+
+    <string name="quick_menu_title">Marathon Droid</string>
+    <string name="quick_menu_resume">Продолжить</string>
+    <string name="quick_menu_edit_controls">Редактор кнопок</string>
+    <string name="quick_menu_quit">Выйти из игры</string>
+
+    <!-- ошибки -->
+    <string name="error_launch_title">Не удалось запустить</string>
+    <string name="error_already_running">Игра уже запущена.</string>
+    <string name="error_native_missing">Не удалось загрузить нативную библиотеку.</string>
+    <string name="error_no_game_dir">Сначала выберите папку с игрой.</string>
+    <string name="error_game_binary_missing">Нет исполняемого файла MarathonRecomp в %1$s</string>
+    <string name="error_runtime_missing">%1$s не установлен — сначала импортируйте пакет рантайма.</string>
+    <string name="error_vpad">Не удалось создать мост геймпада.</string>
+    <string name="error_spawn_failed">Не удалось запустить %1$s.</string>
+    <string name="error_no_file_picker">На устройстве нет файлового менеджера.</string>
+    <string name="error_unsupported_location">Поместите игру во внутреннюю память — эмулятор не может читать это расположение.</string>
+
+    <!-- редактор -->
+    <string name="editor_hint_select">Нажмите на элемент, чтобы выбрать, и перетащите, чтобы переместить</string>
+    <string name="editor_nothing_selected">Ничего не выбрано</string>
+    <string name="editor_selection_format">%1$s — %2$d%%</string>
+    <string name="editor_size">Размер</string>
+    <string name="editor_opacity">Прозрачность</string>
+    <string name="editor_round">Круглая</string>
+    <string name="editor_toggle">Фиксация</string>
+    <string name="editor_binding_button">Действие</string>
+    <string name="editor_binding_format">Действие: %1$s</string>
+    <string name="editor_binding_title">Назначить действие</string>
+    <string name="editor_add">Добавить</string>
+    <string name="editor_delete">Удалить</string>
+    <string name="editor_reset">Сброс</string>
+    <string name="editor_save">Сохранить</string>
+    <string name="editor_saved">Расположение сохранено.</string>
+
+    <string name="editor_add_title">Добавить элемент</string>
+    <string name="editor_add_button">Кнопка</string>
+    <string name="editor_add_stick_left">Левый стик</string>
+    <string name="editor_add_stick_right">Правый стик</string>
+    <string name="editor_add_dpad">Крестовина</string>
+
+    <string name="editor_reset_title">Сбросить расположение?</string>
+    <string name="editor_reset_message">Будет восстановлена стандартная раскладка Xbox 360, ваши изменения пропадут.</string>
+    <string name="editor_reset_confirm">Сбросить</string>
+
+    <string name="editor_exit_title">Сохранить расположение?</string>
+    <string name="editor_exit_message">Есть несохранённые изменения раскладки.</string>
+    <string name="editor_exit_save">Сохранить</string>
+    <string name="editor_exit_discard">Не сохранять</string>
+</resources>

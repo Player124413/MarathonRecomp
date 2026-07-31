@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    A stylised gamepad on the adaptive-icon canvas (108dp, safe zone is the middle 72dp).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- pad body -->
+    <path
+        android:fillColor="#3DDC84"
+        android:pathData="M36,42 L72,42 A16,16 0 0,1 88,58 L88,62 A14,14 0 0,1 74,76 A10,10 0 0,1 66,72 L42,72 A10,10 0 0,1 34,76 A14,14 0 0,1 20,62 L20,58 A16,16 0 0,1 36,42 Z" />
+
+    <!-- d-pad -->
+    <path
+        android:fillColor="#0F1E3D"
+        android:pathData="M34,53 L39,53 L39,48 L45,48 L45,53 L50,53 L50,59 L45,59 L45,64 L39,64 L39,59 L34,59 Z" />
+
+    <!-- face buttons -->
+    <path
+        android:fillColor="#0F1E3D"
+        android:pathData="M70,48 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+    <path
+        android:fillColor="#0F1E3D"
+        android:pathData="M78,56 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+    <path
+        android:fillColor="#0F1E3D"
+        android:pathData="M62,56 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+    <path
+        android:fillColor="#0F1E3D"
+        android:pathData="M70,64 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+</vector>

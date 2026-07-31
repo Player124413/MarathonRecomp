@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Marathon Droid</string>
+    <string name="app_subtitle">Android launcher for Marathon Recompiled (Sonic \'06)</string>
+
+    <!-- sections -->
+    <string name="section_emulator">Emulation backend</string>
+    <string name="section_game">Game files</string>
+    <string name="section_input">Controls</string>
+
+    <string name="emulator_help">Marathon Recompiled is an x86_64 Linux build, so it needs a translation layer. Box64 is the most compatible; FEX-Emu is usually faster but needs a recent device and a proper rootfs.</string>
+
+    <!-- runtime -->
+    <string name="runtime_ready">%1$s is installed and ready.</string>
+    <string name="runtime_not_installed">%1$s is not installed yet — import its runtime package below.</string>
+    <string name="runtime_installing">Installing the %1$s runtime…</string>
+    <string name="runtime_installed">%1$s installed.</string>
+    <string name="runtime_install_failed">Install failed: %1$s</string>
+    <string name="action_install_runtime">Import runtime package (.zip)</string>
+
+    <!-- game -->
+    <string name="game_ready">Game folder: %1$s</string>
+    <string name="game_not_selected">No game folder selected yet.</string>
+    <string name="action_pick_game">Select the game folder</string>
+
+    <!-- options -->
+    <string name="option_compatibility">Compatibility mode (slower, boots on more devices)</string>
+    <string name="option_fex_tso">FEX: strict memory ordering (TSO)</string>
+    <string name="option_touch_controls">Show on-screen controls</string>
+    <string name="option_haptics">Vibration</string>
+    <string name="gamepad_note">Connect a physical controller and the on-screen controls disappear automatically; unplug it and they come back.</string>
+
+    <string name="action_edit_controls">Edit on-screen controls</string>
+    <string name="action_play">Play</string>
+
+    <!-- game screen -->
+    <string name="game_starting">Starting the game…</string>
+    <string name="game_exited">The game exited (code %1$d)</string>
+    <string name="gamepad_connected">Controller connected — touch controls hidden</string>
+    <string name="gamepad_disconnected">Controller disconnected — touch controls restored</string>
+
+    <string name="quick_menu_title">Marathon Droid</string>
+    <string name="quick_menu_resume">Resume</string>
+    <string name="quick_menu_edit_controls">Edit controls</string>
+    <string name="quick_menu_quit">Quit the game</string>
+
+    <!-- errors -->
+    <string name="error_launch_title">Cannot start</string>
+    <string name="error_already_running">The game is already running.</string>
+    <string name="error_native_missing">The native library failed to load.</string>
+    <string name="error_no_game_dir">Select the folder holding the game first.</string>
+    <string name="error_game_binary_missing">No MarathonRecomp executable at %1$s</string>
+    <string name="error_runtime_missing">%1$s is not installed — import its runtime package first.</string>
+    <string name="error_vpad">Cannot create the controller bridge.</string>
+    <string name="error_spawn_failed">%1$s could not be started.</string>
+    <string name="error_no_file_picker">No file picker is available on this device.</string>
+    <string name="error_unsupported_location">Put the game on internal shared storage — the emulator cannot read this location.</string>
+
+    <!-- editor -->
+    <string name="editor_hint_select">Tap a control to select it, drag to move it</string>
+    <string name="editor_nothing_selected">Nothing selected</string>
+    <string name="editor_selection_format">%1$s — %2$d%%</string>
+    <string name="editor_size">Size</string>
+    <string name="editor_opacity">Opacity</string>
+    <string name="editor_round">Round</string>
+    <string name="editor_toggle">Latch</string>
+    <string name="editor_binding_button">Binding</string>
+    <string name="editor_binding_format">Binding: %1$s</string>
+    <string name="editor_binding_title">Bind this control to</string>
+    <string name="editor_add">Add</string>
+    <string name="editor_delete">Delete</string>
+    <string name="editor_reset">Reset</string>
+    <string name="editor_save">Save</string>
+    <string name="editor_saved">Layout saved.</string>
+
+    <string name="editor_add_title">Add a control</string>
+    <string name="editor_add_button">Button</string>
+    <string name="editor_add_stick_left">Left stick</string>
+    <string name="editor_add_stick_right">Right stick</string>
+    <string name="editor_add_dpad">D-pad</string>
+
+    <string name="editor_reset_title">Reset the layout?</string>
+    <string name="editor_reset_message">This restores the default Xbox 360 arrangement and discards your changes.</string>
+    <string name="editor_reset_confirm">Reset</string>
+
+    <string name="editor_exit_title">Save the layout?</string>
+    <string name="editor_exit_message">You have unsaved changes to the control layout.</string>
+    <string name="editor_exit_save">Save</string>
+    <string name="editor_exit_discard">Discard</string>
+</resources>

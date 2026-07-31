@@ -2,6 +2,7 @@
 #include <SDL.h>
 #include <user/config.h>
 #include <hid/hid.h>
+#include <hid/virtual_pad.h>
 #include <os/logger.h>
 #include <ui/game_window.h>
 #include <kernel/xdm.h>
@@ -149,6 +150,20 @@ public:
 
 std::array<Controller, 4> g_controllers;
 Controller* g_activeController;
+
+// True while at least one real SDL controller is open. The Android launcher uses this
+// (indirectly, through the virtual pad going quiet) to decide whether the on-screen
+// touch controls should be shown.
+static bool AnyPhysicalControllerConnected()
+{
+    for (const auto& controller : g_controllers)
+    {
+        if (controller.controller)
+            return true;
+    }
+
+    return false;
+}
 
 inline Controller* EnsureController(uint32_t dwUserIndex)
 {
@@ -369,6 +384,44 @@ void hid::Init()
     if (int mappings = SDL_GameControllerAddMappingsFromFile("gamecontrollerdb.txt"); mappings > 0) {
         LOGFN("Loaded {} controller mapping(s) from SDL_GameControllerDB ({})", mappings, "gamecontrollerdb.txt");
     }
+
+    // Android launcher bridge (no-op unless the environment points at a shared memory file).
+    hid::vpad::Init();
+}
+
+// Pulls the launcher's pad into an XInput gamepad struct. Returns false when the slot is idle.
+static bool PollVirtualPad(uint32_t dwUserIndex, XAMINPUT_GAMEPAD& gamepad)
+{
+    MRVirtualPadState state{};
+
+    if (!hid::vpad::Poll(dwUserIndex, state))
+        return false;
+
+    gamepad.wButtons = static_cast<uint16_t>(state.buttons);
+    gamepad.bLeftTrigger = static_cast<uint8_t>(std::min<uint32_t>(state.leftTrigger, 255));
+    gamepad.bRightTrigger = static_cast<uint8_t>(std::min<uint32_t>(state.rightTrigger, 255));
+    gamepad.sThumbLX = static_cast<int16_t>(std::clamp(state.thumbLX, -32768, 32767));
+    gamepad.sThumbLY = static_cast<int16_t>(std::clamp(state.thumbLY, -32768, 32767));
+    gamepad.sThumbRX = static_cast<int16_t>(std::clamp(state.thumbRX, -32768, 32767));
+    gamepad.sThumbRY = static_cast<int16_t>(std::clamp(state.thumbRY, -32768, 32767));
+
+    // Show Xbox button prompts while the launcher is driving the game, and only switch the
+    // indicator when the pad actually moved (so idle polling doesn't fight the mouse/keyboard).
+    static uint32_t s_lastUpdateCounter = 0;
+
+    if (state.updateCounter != s_lastUpdateCounter)
+    {
+        s_lastUpdateCounter = state.updateCounter;
+
+        if (!App::s_isLoading)
+        {
+            hid::g_inputDevice = hid::EInputDevice::Xbox;
+            hid::g_inputDeviceController = hid::EInputDevice::Xbox;
+            hid::g_inputDeviceExplicit = hid::EInputDeviceExplicit::Xbox360;
+        }
+    }
+
+    return true;
 }
 
 uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
@@ -382,8 +435,16 @@ uint32_t hid::GetState(uint32_t dwUserIndex, XAMINPUT_STATE* pState)
 
     pState->dwPacketNumber = packet++;
 
+    // The launcher's pad only fills in for slot 0 while no real controller is around; a
+    // physical pad plugged into the phone always wins, which is what makes the on-screen
+    // controls disappear cleanly on the Android side.
     if (!g_activeController)
+    {
+        if (PollVirtualPad(dwUserIndex, pState->Gamepad))
+            return ERROR_SUCCESS;
+
         return ERROR_DEVICE_NOT_CONNECTED;
+    }
 
     pState->Gamepad = g_activeController->state;
 
@@ -396,7 +457,15 @@ uint32_t hid::SetState(uint32_t dwUserIndex, XAMINPUT_VIBRATION* pVibration)
         return ERROR_BAD_ARGUMENTS;
 
     if (!g_activeController)
+    {
+        if (hid::vpad::IsConnected(dwUserIndex))
+        {
+            hid::vpad::SetRumble(dwUserIndex, pVibration->wLeftMotorSpeed, pVibration->wRightMotorSpeed);
+            return ERROR_SUCCESS;
+        }
+
         return ERROR_DEVICE_NOT_CONNECTED;
+    }
 
     g_activeController->SetVibration(*pVibration);
 
@@ -409,7 +478,22 @@ uint32_t hid::GetCapabilities(uint32_t dwUserIndex, XAMINPUT_CAPABILITIES* pCaps
         return ERROR_BAD_ARGUMENTS;
 
     if (!g_activeController)
+    {
+        if (hid::vpad::IsConnected(dwUserIndex))
+        {
+            memset(pCaps, 0, sizeof(*pCaps));
+
+            pCaps->Type = XAMINPUT_DEVTYPE_GAMEPAD;
+            pCaps->SubType = XAMINPUT_DEVSUBTYPE_GAMEPAD;
+            pCaps->Flags = 0;
+
+            PollVirtualPad(dwUserIndex, pCaps->Gamepad);
+
+            return ERROR_SUCCESS;
+        }
+
         return ERROR_DEVICE_NOT_CONNECTED;
+    }
 
     memset(pCaps, 0, sizeof(*pCaps));
 
