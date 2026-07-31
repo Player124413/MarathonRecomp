@@ -18,6 +18,8 @@ The setting is a plain dropdown on the home screen and takes effect on the next 
 
 ---
 
+![Default control layout](docs/default-layout.png)
+
 ## Features
 
 - **Backend choice** — Box64 or FEX‑Emu, switchable at any time.
