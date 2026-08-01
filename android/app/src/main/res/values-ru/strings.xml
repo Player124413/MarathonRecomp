@@ -109,4 +109,5 @@
     <string name="driver_install_failed">Не удалось импортировать драйвер: %1$s</string>
     <string name="gpu_detected">Видеоядро: %1$s</string>
     <string name="gpu_not_adreno">Видеоядро: %1$s — Turnip поддерживает только Adreno, оставьте системный драйвер.</string>
+    <string name="error_game_data_missing">Исполняемый файл есть, но нет данных игры: отсутствует %1$s/game/default.xex.\n\nMarathon Recompiled конвертирует данные из вашей копии для Xbox 360 своим установщиком, а он требует ПК. Запустите игру один раз на ПК, пройдите установщик, затем упакуйте всю папку (файл игры + папку \"game\") в zip и установите её здесь.</string>
 </resources>

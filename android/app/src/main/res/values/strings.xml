@@ -110,4 +110,5 @@
     <string name="driver_install_failed">Driver import failed: %1$s</string>
     <string name="gpu_detected">GPU: %1$s</string>
     <string name="gpu_not_adreno">GPU: %1$s — Turnip only supports Adreno, so keep the system driver.</string>
+    <string name="error_game_data_missing">The executable is there, but the game data is not: %1$s/game/default.xex is missing.\n\nMarathon Recompiled converts the data from your own Xbox 360 copy using its installer, which needs a PC. Run the game once on a PC, complete the installer, then zip the whole folder (executable + the \"game\" folder) and install that here.</string>
 </resources>

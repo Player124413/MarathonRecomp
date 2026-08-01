@@ -101,6 +101,12 @@ public final class GameLauncher {
             return context.getString(R.string.error_game_binary_missing, gameBinary.getAbsolutePath());
         }
 
+        // The executable alone is not enough: without game/default.xex the game drops into
+        // its desktop installer wizard, which cannot be driven on a phone. Say so plainly.
+        if (!GameInstaller.hasGameData(gameDir)) {
+            return context.getString(R.string.error_game_data_missing, gameDir.getAbsolutePath());
+        }
+
         Emulator emulator = environment.emulator();
 
         if (!environment.isReady()) {

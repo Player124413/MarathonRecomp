@@ -17,6 +17,10 @@ Box64 is the default and works the moment the app is installed.
 > **No game data is included or distributed.** You supply your own legally acquired copy,
 > exactly as with the desktop builds.
 
+> **Just built the Linux binary and not sure what comes next?**
+> See **[GETTING_STARTED.md](GETTING_STARTED.md)** — the binary alone will not run, it needs
+> the converted game data beside it, and that conversion is a one-time step on a PC.
+
 ---
 
 ![Default control layout](docs/default-layout.png)

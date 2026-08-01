@@ -73,6 +73,21 @@ public final class GameInstaller {
     }
 
     /**
+     * Marathon Recompiled is only half of the picture: next to the executable it needs the
+     * converted game data at {@code game/default.xex}, produced by its own installer wizard
+     * from a legally owned copy of the Xbox 360 game.
+     *
+     * <p>Without it the game boots straight into that wizard, which expects a desktop file
+     * picker and is not usable on a phone. Detecting the situation here lets the launcher
+     * explain it instead of dumping the user into a dead end.</p>
+     *
+     * @param dir the folder holding the MarathonRecomp executable
+     */
+    public static boolean hasGameData(File dir) {
+        return new File(new File(dir, "game"), "default.xex").isFile();
+    }
+
+    /**
      * Extracts a zip into {@code filesDir/game}, replacing whatever was there.
      *
      * <p>Handles the usual shapes a release archive comes in: the executable at the top
