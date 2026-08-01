@@ -86,6 +86,46 @@ Box64 is already built into the APK, so there is nothing else to install.
 
 ---
 
+## Step 3b — x86_64 system libraries (required)
+
+**This is the step behind "the game exited, code 255".**
+
+The build is an ordinary **dynamically linked** Linux program. Most of its dependencies
+are compiled in (SDL, curl, fmt, ...), but it still needs the x86_64 versions of the
+system libraries it links against on Linux:
+
+```
+libc.so.6   libm   libdl   libpthread
+libX11      libglib-2.0     libgio-2.0    (+ their own dependencies)
+```
+
+Android cannot provide any of these — its libraries are ARM64 and bionic, not x86_64
+glibc. When they are missing, box64 prints
+
+```
+Error: Loading needed libs in elf .../MarathonRecomp
+```
+
+and exits with **255**. That is exactly what code 255 means here: not a broken game folder,
+just no system libraries to link against.
+
+**Fix:** *Emulation backend → **Import x86_64 system libraries (.zip)*** — import a small
+x86_64 rootfs once. The launcher checks for `libc.so.6` and refuses archives that clearly
+are not one, and **Play** stays disabled until it is present.
+
+Where to get one:
+
+- Any Debian/Ubuntu **amd64** rootfs works. On a PC you can build a minimal one with
+  `debootstrap`, then add the X11 and glib packages the game needs.
+- The rootfs images shipped by box64/Termux communities work too — just repackage as a
+  **`.zip`**, since `.tar.xz` needs an XZ decoder Android does not provide.
+
+Layout inside the zip (either of these is fine):
+
+```
+lib/x86_64-linux-gnu/libc.so.6 ...        usr/lib/x86_64-linux-gnu/...
+```
+
 ## Step 4 — Optional but recommended: Turnip
 
 If your phone has an **Adreno** GPU, import a Turnip build under **Graphics →
@@ -110,6 +150,7 @@ disappear.
 | *"the game data is not there: …/game/default.xex is missing"* | Step 1 was skipped — the zip had only the binary. |
 | *"No MarathonRecomp executable"* | The zip has the data but not the executable, or it is named differently. |
 | *"Box64 is missing from this build"* | The APK was built without the box64 submodule. |
+| **Exit code 255** | The x86_64 system libraries are missing — do Step 3b. |
 | Game exits immediately | Check the log at `filesDir/logs/game.log`; it captures the emulator's stdout and stderr. |
 
 ### About performance

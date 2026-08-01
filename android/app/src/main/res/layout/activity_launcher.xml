@@ -54,6 +54,21 @@
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
+        <TextView
+            android:id="@+id/rootfs_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/install_rootfs_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/action_install_rootfs" />
+
         <Button
             android:id="@+id/install_runtime_button"
             android:layout_width="match_parent"

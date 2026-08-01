@@ -103,6 +103,16 @@ public class GameActivity extends AppCompatActivity
             @Override
             public void onExited(int exitCode) {
                 Log.i(TAG, "Game process exited: " + exitCode);
+
+                // A non-zero exit almost always means the emulator could not start the
+                // game (255 = box64 returned -1, typically a missing x86_64 library).
+                // Showing the tail of the log here is the difference between a usable
+                // report and "it just closed".
+                if (exitCode != 0) {
+                    showFailureDialog(exitCode);
+                    return;
+                }
+
                 statusText.setVisibility(View.VISIBLE);
                 statusText.setText(getString(R.string.game_exited, exitCode));
                 handler.postDelayed(GameActivity.this::finish, 1500);
@@ -218,6 +228,42 @@ public class GameActivity extends AppCompatActivity
             default:
                 break;
         }
+    }
+
+    /**
+     * Explains a failed launch and offers the log.
+     *
+     * <p>Exit 255 is box64's own "could not start" return, and by far the most common cause
+     * is a missing x86_64 library: the game is a dynamically linked Linux binary that still
+     * needs libc, libX11, glib and friends, and those have to come from an x86_64 rootfs.
+     * The launcher cannot invent them, so the honest thing is to say what is wrong and show
+     * the emulator's own words.</p>
+     */
+    private void showFailureDialog(int exitCode) {
+        String tail = launcher.readLogTail(60);
+
+        String message = getString(R.string.game_failed_message, exitCode);
+
+        if (exitCode == 255) {
+            message += "\n\n" + getString(R.string.game_failed_255);
+        }
+
+        if (!tail.isEmpty()) {
+            message += "\n\n----- log -----\n" + tail;
+        }
+
+        final String full = message;
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.game_failed_title)
+                .setMessage(full)
+                .setCancelable(false)
+                .setNeutralButton(R.string.action_share_log, (d, w) -> {
+                    launcher.shareLog(this);
+                    finish();
+                })
+                .setPositiveButton(android.R.string.ok, (d, w) -> finish())
+                .show();
     }
 
     private void showQuickMenu() {

@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.marathonrecomp.launcher.emu.Emulator;
 import com.marathonrecomp.launcher.emu.EmulatorInstaller;
+import com.marathonrecomp.launcher.emu.RootfsInstaller;
 import com.marathonrecomp.launcher.gpu.GpuInfo;
 import com.marathonrecomp.launcher.gpu.VulkanDriver;
 
@@ -44,6 +45,7 @@ public class LauncherActivity extends AppCompatActivity {
 
     private Spinner emulatorSpinner;
     private TextView runtimeStatus;
+    private TextView rootfsStatus;
     private TextView gameStatus;
     private CheckBox compatibility;
     private CheckBox fexTso;
@@ -58,6 +60,7 @@ public class LauncherActivity extends AppCompatActivity {
     private ActivityResultLauncher<String[]> pickRuntimeZip;
     private ActivityResultLauncher<String[]> pickGameZip;
     private ActivityResultLauncher<String[]> pickDriver;
+    private ActivityResultLauncher<String[]> pickRootfs;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -69,6 +72,7 @@ public class LauncherActivity extends AppCompatActivity {
 
         emulatorSpinner = findViewById(R.id.emulator_spinner);
         runtimeStatus = findViewById(R.id.runtime_status);
+        rootfsStatus = findViewById(R.id.rootfs_status);
         gameStatus = findViewById(R.id.game_status);
         compatibility = findViewById(R.id.compatibility_mode);
         fexTso = findViewById(R.id.fex_tso);
@@ -99,6 +103,9 @@ public class LauncherActivity extends AppCompatActivity {
 
         findViewById(R.id.install_driver_button).setOnClickListener(v ->
                 pickDriver.launch(ARCHIVE_MIME_TYPES));
+
+        findViewById(R.id.install_rootfs_button).setOnClickListener(v ->
+                pickRootfs.launch(ARCHIVE_MIME_TYPES));
 
         removeGameButton.setOnClickListener(v -> confirmRemoveGame());
 
@@ -203,6 +210,46 @@ public class LauncherActivity extends AppCompatActivity {
                         installDriver(uri);
                     }
                 });
+
+        pickRootfs = registerForActivityResult(
+                new ActivityResultContracts.OpenDocument(), uri -> {
+                    if (uri != null) {
+                        installRootfs(uri);
+                    }
+                });
+    }
+
+    /** Unpacks the x86_64 system libraries the emulated game links against. */
+    private void installRootfs(Uri uri) {
+        final AlertDialog progress = new AlertDialog.Builder(this)
+                .setTitle(R.string.rootfs_installing)
+                .setMessage("")
+                .setCancelable(false)
+                .show();
+
+        new Thread(() -> {
+            String error;
+
+            try (InputStream in = getContentResolver().openInputStream(uri)) {
+                error = in == null ? "cannot read the archive"
+                        : RootfsInstaller.install(this, in);
+            } catch (Exception e) {
+                Log.e(TAG, "Rootfs install failed", e);
+                error = String.valueOf(e.getMessage());
+            }
+
+            final String failure = error;
+
+            runOnUiThread(() -> {
+                progress.dismiss();
+
+                if (failure != null) {
+                    toast(getString(R.string.rootfs_install_failed, failure));
+                }
+
+                refreshStatus();
+            });
+        }, "rootfs-install").start();
     }
 
     /**
@@ -376,6 +423,16 @@ public class LauncherActivity extends AppCompatActivity {
             runtimeStatus.setText(getString(R.string.runtime_ready, emulator.displayName));
         }
 
+        boolean rootfsReady = RootfsInstaller.isInstalled(this);
+
+        if (rootfsReady) {
+            rootfsStatus.setText(getString(R.string.rootfs_installed,
+                    android.text.format.Formatter.formatShortFileSize(
+                            this, RootfsInstaller.sizeBytes(this))));
+        } else {
+            rootfsStatus.setText(R.string.rootfs_missing);
+        }
+
         // A bundled backend has nothing to import.
         findViewById(R.id.install_runtime_button)
                 .setVisibility(emulator.bundled ? View.GONE : View.VISIBLE);
@@ -403,7 +460,7 @@ public class LauncherActivity extends AppCompatActivity {
         // FEX's TSO switch is meaningless under box64.
         fexTso.setVisibility(emulator == Emulator.FEX ? View.VISIBLE : View.GONE);
 
-        playButton.setEnabled(runtimeReady && gameReady);
+        playButton.setEnabled(runtimeReady && gameReady && rootfsReady);
     }
 
     /**

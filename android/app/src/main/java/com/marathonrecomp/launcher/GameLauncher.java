@@ -66,6 +66,66 @@ public final class GameLauncher {
     }
 
     /**
+     * Last {@code maxLines} lines of the game log.
+     *
+     * <p>The log holds the emulator's stdout and stderr, which is where the actual reason
+     * for a failed launch lives ("Error: Loading needed libs in elf ...", a missing
+     * library name, and so on).</p>
+     */
+    public String readLogTail(int maxLines) {
+        File log = logFile();
+
+        if (!log.isFile()) {
+            return "";
+        }
+
+        java.util.ArrayDeque<String> lines = new java.util.ArrayDeque<>();
+
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(new java.io.FileInputStream(log),
+                        java.nio.charset.StandardCharsets.UTF_8))) {
+            String line;
+
+            while ((line = reader.readLine()) != null) {
+                lines.addLast(line);
+
+                if (lines.size() > maxLines) {
+                    lines.removeFirst();
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Cannot read the log", e);
+            return "";
+        }
+
+        return String.join("\n", lines);
+    }
+
+    /** Opens a share sheet with the whole log attached, for bug reports. */
+    public void shareLog(android.content.Context activityContext) {
+        File log = logFile();
+
+        if (!log.isFile()) {
+            return;
+        }
+
+        try {
+            android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(
+                    activityContext, activityContext.getPackageName() + ".fileprovider", log);
+
+            android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(android.content.Intent.EXTRA_STREAM, uri);
+            intent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Marathon Droid log");
+            intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            activityContext.startActivity(android.content.Intent.createChooser(intent, "Share the log"));
+        } catch (Exception e) {
+            Log.e(TAG, "Cannot share the log", e);
+        }
+    }
+
+    /**
      * Validates the setup and starts the game.
      *
      * @return null when the launch was started, or a human readable reason it could not be
@@ -123,6 +183,12 @@ public final class GameLauncher {
             return context.getString(R.string.error_runtime_missing, emulator.displayName);
         }
 
+        // Without the x86_64 system libraries the game cannot resolve libc/libX11/glib,
+        // and box64 would exit 255 with nothing useful on screen. Catch it up front.
+        if (!com.marathonrecomp.launcher.emu.RootfsInstaller.isInstalled(context)) {
+            return context.getString(R.string.error_rootfs_missing);
+        }
+
         // The pad must exist before the game maps it, otherwise it starts up padless.
         File vpad = vpadFile();
 
@@ -135,6 +201,12 @@ public final class GameLauncher {
 
         if (logDir != null && !logDir.exists() && !logDir.mkdirs()) {
             Log.w(TAG, "Cannot create " + logDir);
+        }
+
+        // Start each run with an empty log; the spawn helper appends, so otherwise the
+        // failure dialog would show the previous launch's error.
+        if (log.isFile() && !log.delete()) {
+            Log.w(TAG, "Cannot clear " + log);
         }
 
         List<String> command = environment.buildCommand(gameBinary, new ArrayList<>());

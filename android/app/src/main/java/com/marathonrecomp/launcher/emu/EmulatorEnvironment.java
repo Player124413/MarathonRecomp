@@ -46,7 +46,7 @@ public final class EmulatorEnvironment {
 
     /** Directory the x86_64 rootfs libraries live in (both backends can use one). */
     public File rootfsDir() {
-        return new File(runtimeDir, "rootfs");
+        return RootfsInstaller.rootfsDir(context);
     }
 
     /**
@@ -159,15 +159,24 @@ public final class EmulatorEnvironment {
             // the user added one) supplies the rest of the system libraries.
             StringBuilder libPath = new StringBuilder(gameDir.getAbsolutePath());
             libPath.append(':').append(new File(gameDir, "lib").getAbsolutePath());
-            libPath.append(':').append(lib.getAbsolutePath());
-            libPath.append(':').append(new File(rootfs, "lib/x86_64-linux-gnu").getAbsolutePath());
+
+            // Every library directory the imported rootfs actually has. Without this the
+            // game cannot resolve libc/libX11/glib and box64 exits with 255.
+            String rootfsLibs = RootfsInstaller.libraryPath(context);
+
+            if (!rootfsLibs.isEmpty()) {
+                libPath.append(':').append(rootfsLibs);
+            }
 
             // The bundled box64 lives in the APK's native library folder alongside the
             // launcher's own libs; keep that on the host search path so its dependencies
             // (libc++_shared and friends) resolve.
             env.put("BOX64_LD_LIBRARY_PATH", libPath.toString());
             env.put("BOX64_PATH", gameDir.getAbsolutePath());
-            env.put("BOX64_LOG", prefs.isEmulatorLoggingEnabled() ? "1" : "0");
+            // Level 1 even when "verbose logging" is off: it is nearly free and it is the
+            // difference between a diagnosable failure and a silent exit 255.
+            env.put("BOX64_LOG", prefs.isEmulatorLoggingEnabled() ? "2" : "1");
+            env.put("BOX64_SHOWSEGV", "1");
             env.put("BOX64_NOBANNER", "1");
 
             // Dynarec tuning. BIGBLOCK 2 and STRONGMEM 1 are the safe-but-fast defaults;

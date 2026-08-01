@@ -111,4 +111,14 @@
     <string name="gpu_detected">GPU: %1$s</string>
     <string name="gpu_not_adreno">GPU: %1$s — Turnip only supports Adreno, so keep the system driver.</string>
     <string name="error_game_data_missing">The executable is there, but the game data is not: %1$s/game/default.xex is missing.\n\nMarathon Recompiled converts the data from your own Xbox 360 copy using its installer, which needs a PC. Run the game once on a PC, complete the installer, then zip the whole folder (executable + the \"game\" folder) and install that here.</string>
+    <string name="game_failed_title">The game did not start</string>
+    <string name="game_failed_message">The emulator exited with code %1$d.</string>
+    <string name="game_failed_255">Code 255 is Box64\'s own \"could not start\" result. The usual cause is missing x86_64 system libraries: the build is a normal dynamically linked Linux program, so besides your game files it needs libc, libX11, glib and others for x86_64. Those come from an x86_64 rootfs, which this launcher does not yet bundle — see GETTING_STARTED.md.</string>
+    <string name="action_share_log">Share the log</string>
+    <string name="error_rootfs_missing">The x86_64 system libraries are missing.\n\nThe game is a normal dynamically linked Linux program: besides your game files it needs x86_64 builds of libc, libX11, glib and others. Android cannot supply them (its own libraries are ARM64/bionic), so import a small x86_64 rootfs once: Emulation backend → Import x86_64 system libraries (.zip). Without it Box64 stops with code 255.</string>
+    <string name="action_install_rootfs">Import x86_64 system libraries (.zip)</string>
+    <string name="rootfs_installed">System libraries: installed (%1$s)</string>
+    <string name="rootfs_missing">System libraries: not installed — the game cannot start without them.</string>
+    <string name="rootfs_installing">Unpacking the system libraries…</string>
+    <string name="rootfs_install_failed">Import failed: %1$s</string>
 </resources>

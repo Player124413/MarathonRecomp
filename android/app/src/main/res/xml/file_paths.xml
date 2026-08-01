@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- filesDir/logs, where the emulator's stdout and stderr are captured. -->
+    <files-path name="logs" path="logs/" />
+</paths>

@@ -110,4 +110,14 @@
     <string name="gpu_detected">Видеоядро: %1$s</string>
     <string name="gpu_not_adreno">Видеоядро: %1$s — Turnip поддерживает только Adreno, оставьте системный драйвер.</string>
     <string name="error_game_data_missing">Исполняемый файл есть, но нет данных игры: отсутствует %1$s/game/default.xex.\n\nMarathon Recompiled конвертирует данные из вашей копии для Xbox 360 своим установщиком, а он требует ПК. Запустите игру один раз на ПК, пройдите установщик, затем упакуйте всю папку (файл игры + папку \"game\") в zip и установите её здесь.</string>
+    <string name="game_failed_title">Игра не запустилась</string>
+    <string name="game_failed_message">Эмулятор завершился с кодом %1$d.</string>
+    <string name="game_failed_255">Код 255 — это собственный результат Box64 «не удалось запустить». Обычная причина — нехватка системных библиотек x86_64: сборка представляет собой обычную динамически слинкованную программу Linux, поэтому кроме файлов игры ей нужны libc, libX11, glib и другие в версии x86_64. Они берутся из rootfs x86_64, который лаунчер пока не поставляет — см. GETTING_STARTED.md.</string>
+    <string name="action_share_log">Поделиться логом</string>
+    <string name="error_rootfs_missing">Отсутствуют системные библиотеки x86_64.\n\nИгра — обычная динамически слинкованная программа Linux: кроме файлов игры ей нужны сборки libc, libX11, glib и других под x86_64. Android их дать не может (у него библиотеки ARM64/bionic), поэтому один раз импортируйте небольшой rootfs x86_64: «Слой эмуляции» → «Импортировать системные библиотеки x86_64 (.zip)». Без них Box64 завершается с кодом 255.</string>
+    <string name="action_install_rootfs">Импортировать системные библиотеки x86_64 (.zip)</string>
+    <string name="rootfs_installed">Системные библиотеки: установлены (%1$s)</string>
+    <string name="rootfs_missing">Системные библиотеки: не установлены — без них игра не запустится.</string>
+    <string name="rootfs_installing">Распаковка системных библиотек…</string>
+    <string name="rootfs_install_failed">Импорт не удался: %1$s</string>
 </resources>
