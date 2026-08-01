@@ -126,9 +126,17 @@ public final class RootfsInstaller {
         File target = rootfsDir(context);
         File staging = new File(target.getParentFile(), "rootfs.tmp");
 
-        deleteRecursively(staging);
+        FileUtils.deleteRecursively(staging);
 
-        if (!staging.mkdirs()) {
+        // Make sure the parent exists too: on a fresh install filesDir/runtime may not
+        // be there yet, and reporting the leaf path alone hid that.
+        File parent = staging.getParentFile();
+
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            return "Cannot create " + parent;
+        }
+
+        if (!staging.mkdirs() && !staging.isDirectory()) {
             return "Cannot create " + staging;
         }
 
@@ -168,13 +176,13 @@ public final class RootfsInstaller {
             // Tolerate an archive wrapped in a single top-level folder.
             File root = unwrapSingleDirectory(staging);
 
-            deleteRecursively(target);
+            FileUtils.deleteRecursively(target);
 
             if (!root.renameTo(target)) {
                 return "Cannot move the rootfs into place.";
             }
 
-            deleteRecursively(staging);
+            FileUtils.deleteRecursively(staging);
 
             if (findLibc(context) == null) {
                 String hint = zip
@@ -191,7 +199,7 @@ public final class RootfsInstaller {
             Log.e(TAG, "Rootfs install failed", e);
             return e.getMessage() != null ? e.getMessage() : e.toString();
         } finally {
-            deleteRecursively(staging);
+            FileUtils.deleteRecursively(staging);
         }
     }
 
@@ -235,7 +243,7 @@ public final class RootfsInstaller {
     }
 
     public static void uninstall(Context context) {
-        deleteRecursively(rootfsDir(context));
+        FileUtils.deleteRecursively(rootfsDir(context));
     }
 
     // ----------------------------------------------------------------- helpers ----
@@ -289,23 +297,4 @@ public final class RootfsInstaller {
         return total;
     }
 
-    private static void deleteRecursively(File file) {
-        if (file == null || !file.exists()) {
-            return;
-        }
-
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-
-            if (children != null) {
-                for (File child : children) {
-                    deleteRecursively(child);
-                }
-            }
-        }
-
-        if (!file.delete()) {
-            Log.w(TAG, "Cannot delete " + file);
-        }
-    }
 }

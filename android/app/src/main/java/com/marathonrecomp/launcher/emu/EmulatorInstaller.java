@@ -170,7 +170,7 @@ public final class EmulatorInstaller {
 
     /** Deletes an installed backend (Settings -> remove). */
     public static void uninstall(Context context, Emulator emulator) {
-        deleteRecursively(dirFor(context, emulator));
+        FileUtils.deleteRecursively(dirFor(context, emulator));
     }
 
     // ----------------------------------------------------------------- helpers ----
@@ -237,19 +237,4 @@ public final class EmulatorInstaller {
         }
     }
 
-    private static void deleteRecursively(File file) {
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-
-            if (children != null) {
-                for (File child : children) {
-                    deleteRecursively(child);
-                }
-            }
-        }
-
-        if (file.exists() && !file.delete()) {
-            Log.w(TAG, "Cannot delete " + file);
-        }
-    }
 }

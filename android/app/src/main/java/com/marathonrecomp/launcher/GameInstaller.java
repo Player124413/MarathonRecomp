@@ -3,6 +3,8 @@ package com.marathonrecomp.launcher;
 import android.content.Context;
 import android.util.Log;
 
+import com.marathonrecomp.launcher.emu.FileUtils;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -101,9 +103,15 @@ public final class GameInstaller {
 
         // A half-finished previous attempt must not be mistaken for a good install.
         File staging = new File(context.getFilesDir(), GAME_SUBDIR + ".tmp");
-        deleteRecursively(staging);
+        com.marathonrecomp.launcher.emu.FileUtils.FileUtils.deleteRecursively(staging);
 
-        if (!staging.mkdirs()) {
+        File stagingParent = staging.getParentFile();
+
+        if (stagingParent != null && !stagingParent.exists() && !stagingParent.mkdirs()) {
+            return Result.failure("Cannot create " + stagingParent);
+        }
+
+        if (!staging.mkdirs() && !staging.isDirectory()) {
             return Result.failure("Cannot create " + staging);
         }
 
@@ -178,13 +186,13 @@ public final class GameInstaller {
             }
 
             // Swap the finished tree into place only once it is known good.
-            deleteRecursively(target);
+            com.marathonrecomp.launcher.emu.FileUtils.FileUtils.deleteRecursively(target);
 
             if (!root.renameTo(target)) {
                 return Result.failure("Cannot move the installed files into place.");
             }
 
-            deleteRecursively(staging);
+            com.marathonrecomp.launcher.emu.FileUtils.FileUtils.deleteRecursively(staging);
 
             Log.i(TAG, "Installed " + files + " files (" + bytes + " bytes) to " + target);
 
@@ -193,13 +201,13 @@ public final class GameInstaller {
             Log.e(TAG, "Install failed", e);
             return Result.failure(e.getMessage() != null ? e.getMessage() : e.toString());
         } finally {
-            deleteRecursively(staging);
+            com.marathonrecomp.launcher.emu.FileUtils.FileUtils.deleteRecursively(staging);
         }
     }
 
     /** Removes an installed game (Settings → remove). */
     public static void uninstall(Context context) {
-        deleteRecursively(gameDir(context));
+        com.marathonrecomp.launcher.emu.FileUtils.FileUtils.deleteRecursively(gameDir(context));
     }
 
     // ----------------------------------------------------------------- helpers ----
@@ -266,23 +274,4 @@ public final class GameInstaller {
         return null;
     }
 
-    private static void deleteRecursively(File file) {
-        if (file == null || !file.exists()) {
-            return;
-        }
-
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-
-            if (children != null) {
-                for (File child : children) {
-                    deleteRecursively(child);
-                }
-            }
-        }
-
-        if (!file.delete()) {
-            Log.w(TAG, "Cannot delete " + file);
-        }
-    }
 }

@@ -85,9 +85,15 @@ public final class RootfsDownloader {
         File target = RootfsInstaller.rootfsDir(context);
         File staging = new File(target.getParentFile(), "rootfs.dl");
 
-        deleteRecursively(staging);
+        FileUtils.deleteRecursively(staging);
 
-        if (!staging.mkdirs()) {
+        File parent = staging.getParentFile();
+
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            return "Cannot create " + parent;
+        }
+
+        if (!staging.mkdirs() && !staging.isDirectory()) {
             return "Cannot create " + staging;
         }
 
@@ -127,7 +133,7 @@ public final class RootfsDownloader {
 
             report(listener, "Finishing…", 1, 1);
 
-            deleteRecursively(target);
+            FileUtils.deleteRecursively(target);
 
             if (!staging.renameTo(target)) {
                 return "Cannot move the system libraries into place.";
@@ -146,7 +152,7 @@ public final class RootfsDownloader {
                 connection.disconnect();
             }
 
-            deleteRecursively(staging);
+            FileUtils.deleteRecursively(staging);
         }
     }
 
@@ -176,24 +182,6 @@ public final class RootfsDownloader {
         }
     }
 
-    private static void deleteRecursively(File file) {
-        if (file == null) {
-            return;
-        }
-
-        // A dangling symlink is not "exists()" but still needs deleting, so try regardless.
-        if (file.isDirectory()) {
-            File[] children = file.listFiles();
-
-            if (children != null) {
-                for (File child : children) {
-                    deleteRecursively(child);
-                }
-            }
-        }
-
-        file.delete();
-    }
 
     /** Wraps the network stream to report download progress. */
     private static final class CountingInputStream extends InputStream {
