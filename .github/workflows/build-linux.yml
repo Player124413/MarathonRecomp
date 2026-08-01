@@ -1,0 +1,140 @@
+name: Build Linux
+
+# Standalone Linux build, separate from the PR validation workflow so it can be
+# started by hand and produce a downloadable binary.
+#
+# Building the game needs the private asset repository (it holds default.xex and the
+# shader archives that the recompilers consume). Set the ASSET_REPO and
+# ASSET_REPO_TOKEN secrets on the repository; without them the job stops early with a
+# clear message instead of failing halfway through the build.
+
+on:
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: "CMake preset to build"
+        type: choice
+        required: true
+        default: linux-release
+        options:
+          - linux-release
+          - linux-relwithdebinfo
+          - linux-debug
+      architecture:
+        description: "Target architecture"
+        type: choice
+        required: true
+        default: x86_64
+        options:
+          - x86_64
+  push:
+    branches:
+      - main
+      - master
+      - "arena/**"
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+
+concurrency:
+  group: build-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Linux (${{ inputs.preset || 'linux-release' }})
+    runs-on: ubuntu-24.04
+
+    env:
+      LLVM_VERSION: 18
+      CMAKE_PRESET: ${{ inputs.preset || 'linux-release' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check for the asset repository secrets
+        id: assets
+        env:
+          ASSET_REPO: ${{ secrets.ASSET_REPO }}
+          ASSET_REPO_TOKEN: ${{ secrets.ASSET_REPO_TOKEN }}
+        run: |
+          if [ -n "$ASSET_REPO" ] && [ -n "$ASSET_REPO_TOKEN" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ASSET_REPO / ASSET_REPO_TOKEN are not set - only the toolchain and third-party libraries will be built."
+          fi
+
+      - name: Checkout private asset repository
+        if: steps.assets.outputs.available == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.ASSET_REPO }}
+          token: ${{ secrets.ASSET_REPO_TOKEN }}
+          path: ./private
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build \
+            llvm-${LLVM_VERSION}-dev \
+            libgtk-3-dev \
+            libasound2-dev \
+            libpulse-dev \
+            libpipewire-0.3-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libwayland-dev \
+            pkg-config
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ccache-linux-${{ env.CMAKE_PRESET }}
+
+      - name: Cache vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./thirdparty/vcpkg/downloads
+            ./thirdparty/vcpkg/packages
+          key: vcpkg-linux-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-linux-
+
+      - name: Stage the private assets
+        if: steps.assets.outputs.available == 'true'
+        run: cp ./private/* ./MarathonRecompLib/private
+
+      - name: Configure
+        env:
+          CCACHE_DIR: /tmp/ccache
+        run: |
+          cmake . --preset ${CMAKE_PRESET} \
+            -DSDL2MIXER_VORBIS=VORBISFILE \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        if: steps.assets.outputs.available == 'true'
+        env:
+          CCACHE_DIR: /tmp/ccache
+        run: cmake --build ./out/build/${CMAKE_PRESET} --target MarathonRecomp
+
+      - name: Build the tools only (no assets available)
+        if: steps.assets.outputs.available != 'true'
+        env:
+          CCACHE_DIR: /tmp/ccache
+        run: cmake --build ./out/build/${CMAKE_PRESET} --target XenonRecomp XenosRecomp
+
+      - name: Upload the binary
+        if: steps.assets.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: MarathonRecomp-Linux-${{ env.CMAKE_PRESET }}
+          path: ./out/build/${{ env.CMAKE_PRESET }}/MarathonRecomp/MarathonRecomp
+          if-no-files-found: error
