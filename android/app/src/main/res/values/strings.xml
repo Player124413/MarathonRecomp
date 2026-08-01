@@ -121,4 +121,10 @@
     <string name="rootfs_missing">System libraries: not installed — the game cannot start without them.</string>
     <string name="rootfs_installing">Unpacking the system libraries…</string>
     <string name="rootfs_install_failed">Import failed: %1$s</string>
+    <string name="action_download_rootfs">Download the system libraries automatically</string>
+    <string name="rootfs_downloading">Downloading the system libraries</string>
+    <string name="rootfs_download_progress">%1$s\n%2$d of %3$d MB</string>
+    <string name="rootfs_download_failed">Download failed: %1$s</string>
+    <string name="rootfs_download_done">System libraries installed.</string>
+    <string name="rootfs_help">The game needs x86_64 versions of libc, libX11 and glib, which Android does not have. Tap below and the launcher fetches and installs them itself (about 45 MB, once).</string>
 </resources>

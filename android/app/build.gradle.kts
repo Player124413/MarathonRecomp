@@ -17,6 +17,15 @@ android {
         versionCode = 1
         versionName = "0.1.0"
 
+        // Where the launcher fetches the prebuilt x86_64 rootfs from. Derived from the
+        // GitHub repository the build ran in, so a fork automatically uses its own
+        // release instead of the upstream one. -PsourceRepo=owner/name overrides it.
+        val sourceRepo = (project.findProperty("sourceRepo") as String?)
+            ?: System.getenv("GITHUB_REPOSITORY")
+            ?: "Player124413/MarathonRecomp"
+
+        buildConfigField("String", "SOURCE_REPOSITORY", "\"$sourceRepo\"")
+
         externalNativeBuild {
             cmake {
                 // box64 is C++-aware in places and links the shared STL; "none" would

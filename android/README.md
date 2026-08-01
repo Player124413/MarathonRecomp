@@ -28,6 +28,8 @@ Box64 is the default and works the moment the app is installed.
 ## Features
 
 - **Box64 built in** — compiled into the APK, no runtime download, no Termux.
+- **One-tap system libraries** — the launcher downloads and unpacks the x86_64 rootfs the
+  game links against, so there is nothing to hunt for or repackage.
 - **Install the game from a .zip** — unpacked by the launcher, no manual file shuffling.
 - **Turnip support** — import Mesa's Adreno Vulkan driver and the launcher wires it in.
 - **Backend choice** — Box64 or an imported FEX‑Emu, switchable at any time.

@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.marathonrecomp.launcher.emu.Emulator;
 import com.marathonrecomp.launcher.emu.EmulatorInstaller;
+import com.marathonrecomp.launcher.emu.RootfsDownloader;
 import com.marathonrecomp.launcher.emu.RootfsInstaller;
 import com.marathonrecomp.launcher.gpu.GpuInfo;
 import com.marathonrecomp.launcher.gpu.VulkanDriver;
@@ -106,6 +107,8 @@ public class LauncherActivity extends AppCompatActivity {
 
         findViewById(R.id.install_rootfs_button).setOnClickListener(v ->
                 pickRootfs.launch(ARCHIVE_MIME_TYPES));
+
+        findViewById(R.id.download_rootfs_button).setOnClickListener(v -> downloadRootfs());
 
         removeGameButton.setOnClickListener(v -> confirmRemoveGame());
 
@@ -217,6 +220,52 @@ public class LauncherActivity extends AppCompatActivity {
                         installRootfs(uri);
                     }
                 });
+    }
+
+    /**
+     * Fetches the x86_64 system libraries and installs them, with no user legwork.
+     *
+     * <p>The archive is prepared by CI and published as a release asset; the app streams
+     * it straight through gunzip into the tar reader, so nothing large is ever written to
+     * disk twice.</p>
+     */
+    private void downloadRootfs() {
+        AlertDialog progress = new AlertDialog.Builder(this)
+                .setTitle(R.string.rootfs_downloading)
+                .setMessage("…")
+                .setCancelable(false)
+                .show();
+
+        new Thread(() -> {
+            String error = RootfsDownloader.downloadAndInstall(this, (stage, done, total) ->
+                    runOnUiThread(() -> {
+                        long mbDone = done / (1024 * 1024);
+                        long mbTotal = (total > 0 ? total : RootfsDownloader.approximateSizeBytes())
+                                / (1024 * 1024);
+
+                        progress.setMessage(getString(R.string.rootfs_download_progress,
+                                stage, mbDone, mbTotal));
+                    }));
+
+            final String failure = error;
+
+            runOnUiThread(() -> {
+                progress.dismiss();
+
+                if (failure == null) {
+                    toast(getString(R.string.rootfs_download_done));
+                } else {
+                    // Long, because the "not published yet" case explains what to do.
+                    new AlertDialog.Builder(this)
+                            .setTitle(R.string.rootfs_downloading)
+                            .setMessage(getString(R.string.rootfs_download_failed, failure))
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show();
+                }
+
+                refreshStatus();
+            });
+        }, "rootfs-download").start();
     }
 
     /** Unpacks the x86_64 system libraries the emulated game links against. */

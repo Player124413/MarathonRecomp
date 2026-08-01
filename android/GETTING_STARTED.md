@@ -86,45 +86,39 @@ Box64 is already built into the APK, so there is nothing else to install.
 
 ---
 
-## Step 3b — x86_64 system libraries (required)
+## Step 3b — System libraries (one tap)
 
-**This is the step behind "the game exited, code 255".**
+**This is what "the game exited, code 255" was about.**
 
 The build is an ordinary **dynamically linked** Linux program. Most of its dependencies
-are compiled in (SDL, curl, fmt, ...), but it still needs the x86_64 versions of the
-system libraries it links against on Linux:
+are compiled in, but it still needs the x86_64 versions of the system libraries it links
+against — `libc`, `libm`, `libX11`, `libglib-2.0`, the Vulkan loader and so on. Android
+has none of them: its libraries are ARM64 and bionic, not x86_64 glibc. Without them box64
+stops with `Error: Loading needed libs in elf ...` and exits **255**.
 
-```
-libc.so.6   libm   libdl   libpthread
-libX11      libglib-2.0     libgio-2.0    (+ their own dependencies)
-```
+**Just tap _Download the system libraries automatically_.** The launcher fetches a
+prepared ~45 MB archive and unpacks it. Nothing else to do — **Play** stays disabled until
+it is there.
 
-Android cannot provide any of these — its libraries are ARM64 and bionic, not x86_64
-glibc. When they are missing, box64 prints
+<details>
+<summary>Why the archive is prepared in CI rather than assembled on the phone</summary>
 
-```
-Error: Loading needed libs in elf .../MarathonRecomp
-```
+Building it on-device is not realistic: a package's real download URL embeds a version
+that changes with every security update, the dependency tree has to be resolved properly,
+and modern `.deb` files compress their payload with **xz**, which Android cannot decode.
 
-and exits with **255**. That is exactly what code 255 means here: not a broken game folder,
-just no system libraries to link against.
+So `ci/workflows/build-rootfs.yml` runs `debootstrap` on a real Ubuntu machine, strips out
+docs/locales/headers, checks that the libraries the game needs are actually present, and
+publishes one **`.tar.gz`**. gzip is deliberate: Java decodes it natively, so the app
+unpacks everything with no third-party archive library at all.
 
-**Fix:** *Emulation backend → **Import x86_64 system libraries (.zip)*** — import a small
-x86_64 rootfs once. The launcher checks for `libc.so.6` and refuses archives that clearly
-are not one, and **Play** stays disabled until it is present.
+If the download reports *"not published for this build yet"*, run that workflow once — it
+attaches the archive to the `rootfs-v1` release, which is exactly where the app looks. The
+URL is derived from the repository the APK was built from, so a fork uses its own release.
 
-Where to get one:
-
-- Any Debian/Ubuntu **amd64** rootfs works. On a PC you can build a minimal one with
-  `debootstrap`, then add the X11 and glib packages the game needs.
-- The rootfs images shipped by box64/Termux communities work too — just repackage as a
-  **`.zip`**, since `.tar.xz` needs an XZ decoder Android does not provide.
-
-Layout inside the zip (either of these is fine):
-
-```
-lib/x86_64-linux-gnu/libc.so.6 ...        usr/lib/x86_64-linux-gnu/...
-```
+*Importing your own archive still works* (**Import x86_64 system libraries**) if you would
+rather supply a rootfs yourself — `.zip`, or the same `.tar.gz` layout.
+</details>
 
 ## Step 4 — Optional but recommended: Turnip
 
@@ -150,7 +144,7 @@ disappear.
 | *"the game data is not there: …/game/default.xex is missing"* | Step 1 was skipped — the zip had only the binary. |
 | *"No MarathonRecomp executable"* | The zip has the data but not the executable, or it is named differently. |
 | *"Box64 is missing from this build"* | The APK was built without the box64 submodule. |
-| **Exit code 255** | The x86_64 system libraries are missing — do Step 3b. |
+| **Exit code 255** | The system libraries are missing — do Step 3b (one tap). |
 | Game exits immediately | Check the log at `filesDir/logs/game.log`; it captures the emulator's stdout and stderr. |
 
 ### About performance

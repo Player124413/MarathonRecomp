@@ -120,4 +120,10 @@
     <string name="rootfs_missing">Системные библиотеки: не установлены — без них игра не запустится.</string>
     <string name="rootfs_installing">Распаковка системных библиотек…</string>
     <string name="rootfs_install_failed">Импорт не удался: %1$s</string>
+    <string name="action_download_rootfs">Скачать системные библиотеки автоматически</string>
+    <string name="rootfs_downloading">Загрузка системных библиотек</string>
+    <string name="rootfs_download_progress">%1$s\n%2$d из %3$d МБ</string>
+    <string name="rootfs_download_failed">Загрузка не удалась: %1$s</string>
+    <string name="rootfs_download_done">Системные библиотеки установлены.</string>
+    <string name="rootfs_help">Игре нужны версии libc, libX11 и glib для x86_64, которых в Android нет. Нажмите кнопку ниже — лаунчер скачает и установит их сам (около 45 МБ, один раз).</string>
 </resources>

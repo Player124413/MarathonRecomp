@@ -72,3 +72,19 @@ reason above):
       - name: Verify box64 is packaged
         run: ../android/verify-apk.sh app/build/outputs/apk/debug/marathondroid-debug.apk
 ```
+
+
+---
+
+## `build-rootfs.yml` — the x86_64 system libraries
+
+Builds the rootfs the Android launcher downloads automatically, and attaches it to a
+release (default tag `rootfs-v1`, which is where the app looks).
+
+**Run it once** — Actions → *Build the x86_64 rootfs* → *Run workflow*. Until then the
+in-app download reports that the libraries have not been published for this build yet.
+
+It runs `debootstrap` for Ubuntu 22.04 amd64, pulls in the libraries the game links
+(`libX11`, `glib`, the Vulkan loader, `libstdc++`, ...), strips docs/locales/headers,
+verifies the important ones are present, and packs a single `.tar.gz` — gzip on purpose,
+because Java decodes it natively and the app therefore needs no archive library.
