@@ -123,11 +123,12 @@ jobs:
           if-no-files-found: error
 
       - name: Publish to a release
-        if: ${{ inputs.release_tag != '' }}
+        # Also publishes on push: a push run has no release_tag input, so the old
+        # condition skipped it and the archive stayed an artifact the app cannot reach.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ inputs.release_tag }}"
+          TAG="${{ inputs.release_tag || 'rootfs-v1' }}"
 
           if ! gh release view "$TAG" > /dev/null 2>&1; then
             gh release create "$TAG" \
