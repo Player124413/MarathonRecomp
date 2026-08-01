@@ -76,11 +76,21 @@ reason above):
 
 ---
 
-## `build-rootfs.yml` — the x86_64 system libraries (already active)
+## `build-rootfs.yml` — the x86_64 system libraries (active, needs one fix)
 
 Lives in `.github/workflows/`. Builds the rootfs the Android launcher downloads
-automatically, and attaches it to a release (default tag `rootfs-v1`, which is where the
-app looks).
+automatically, and attaches it to a release (tag `rootfs-v1`, which is where the app
+looks).
+
+> **The live copy has one problem:** its publish step is guarded by
+> `if: ${{ inputs.release_tag != '' }}`, and a **push**-triggered run has no inputs — so
+> the archive builds fine but is only uploaded as a build artifact, which the app cannot
+> download. The first run hit exactly this.
+>
+> **Fix:** copy `ci/workflows/build-rootfs.yml` over `.github/workflows/build-rootfs.yml`
+> through the GitHub web UI (it drops the `if:` and defaults the tag to `rootfs-v1`), or
+> just start the workflow by hand: **Actions → Build the x86_64 rootfs → Run workflow**,
+> which supplies the input and publishes correctly.
 
 **Run it once** — Actions → *Build the x86_64 rootfs* → *Run workflow*. Until then the
 in-app download reports that the libraries have not been published for this build yet.
