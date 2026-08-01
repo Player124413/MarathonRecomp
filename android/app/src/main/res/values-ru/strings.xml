@@ -114,8 +114,8 @@
     <string name="game_failed_message">Эмулятор завершился с кодом %1$d.</string>
     <string name="game_failed_255">Код 255 — это собственный результат Box64 «не удалось запустить». Обычная причина — нехватка системных библиотек x86_64: сборка представляет собой обычную динамически слинкованную программу Linux, поэтому кроме файлов игры ей нужны libc, libX11, glib и другие в версии x86_64. Они берутся из rootfs x86_64, который лаунчер пока не поставляет — см. GETTING_STARTED.md.</string>
     <string name="action_share_log">Поделиться логом</string>
-    <string name="error_rootfs_missing">Отсутствуют системные библиотеки x86_64.\n\nИгра — обычная динамически слинкованная программа Linux: кроме файлов игры ей нужны сборки libc, libX11, glib и других под x86_64. Android их дать не может (у него библиотеки ARM64/bionic), поэтому один раз импортируйте небольшой rootfs x86_64: «Слой эмуляции» → «Импортировать системные библиотеки x86_64 (.zip)». Без них Box64 завершается с кодом 255.</string>
-    <string name="action_install_rootfs">Импортировать системные библиотеки x86_64 (.zip)</string>
+    <string name="error_rootfs_missing">Отсутствуют системные библиотеки x86_64.\n\nИгра — обычная динамически слинкованная программа Linux: кроме файлов игры ей нужны сборки libc, libX11, glib и других под x86_64. Android их дать не может (у него библиотеки ARM64/bionic), поэтому один раз нажмите «Скачать системные библиотеки автоматически». Без них Box64 завершается с кодом 255.</string>
+    <string name="action_install_rootfs">Импортировать библиотеки (.tar.gz / .zip)</string>
     <string name="rootfs_installed">Системные библиотеки: установлены (%1$s)</string>
     <string name="rootfs_missing">Системные библиотеки: не установлены — без них игра не запустится.</string>
     <string name="rootfs_installing">Распаковка системных библиотек…</string>
@@ -126,4 +126,9 @@
     <string name="rootfs_download_failed">Загрузка не удалась: %1$s</string>
     <string name="rootfs_download_done">Системные библиотеки установлены.</string>
     <string name="rootfs_help">Игре нужны версии libc, libX11 и glib для x86_64, которых в Android нет. Нажмите кнопку ниже — лаунчер скачает и установит их сам (около 45 МБ, один раз).</string>
+    <string name="x_display_help">Игра открывает окно как на компьютере, а своего X-сервера в Android нет. Чтобы увидеть картинку, установите Termux:X11 (или XServer XSDL), запустите его и укажите дисплей ниже — обычно :0. Пустое поле — SDL выберет сам (скорее всего окно открыть не удастся).</string>
+    <string name="x_display_hint">X-дисплей, например :0</string>
+    <string name="warn_no_display_title">Дисплей не настроен</string>
+    <string name="warn_no_display">X-дисплей не указан, игре некуда выводить изображение и она, скорее всего, сразу закроется.\n\nУстановите Termux:X11, запустите его и впишите :0 в разделе «Графика».\n\nВсё равно запустить?</string>
+    <string name="action_start_anyway">Всё равно запустить</string>
 </resources>

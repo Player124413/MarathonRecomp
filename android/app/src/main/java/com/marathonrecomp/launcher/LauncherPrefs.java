@@ -18,6 +18,8 @@ public final class LauncherPrefs {
     private static final String KEY_HAPTICS = "haptics";
     private static final String KEY_TOUCH_CONTROLS = "touch_controls";
     private static final String KEY_GAME_DIR = "game_dir";
+    private static final String KEY_X_DISPLAY = "x_display";
+    private static final String KEY_PULSE_SERVER = "pulse_server";
 
     private final SharedPreferences prefs;
 
@@ -95,6 +97,34 @@ public final class LauncherPrefs {
 
     public void setTouchControlsEnabled(boolean enabled) {
         prefs.edit().putBoolean(KEY_TOUCH_CONTROLS, enabled).apply();
+    }
+
+    // ----------------------------------------------------------------- game ----
+
+    // --------------------------------------------------------------- display ----
+
+    /**
+     * X display to render to, e.g. {@code :0} for Termux:X11.
+     *
+     * <p>Empty by default and that is deliberate: Android has no X server, so claiming
+     * {@code DISPLAY=:0} when nothing is listening only turns a clear failure into a
+     * confusing one. Set it when you actually run Termux:X11 or XServer XSDL.</p>
+     */
+    public String xServerDisplay() {
+        return prefs.getString(KEY_X_DISPLAY, "");
+    }
+
+    public void setXServerDisplay(String display) {
+        prefs.edit().putString(KEY_X_DISPLAY, display == null ? "" : display.trim()).apply();
+    }
+
+    /** PulseAudio server, e.g. {@code 127.0.0.1}. Empty means "no audio". */
+    public String pulseServer() {
+        return prefs.getString(KEY_PULSE_SERVER, "");
+    }
+
+    public void setPulseServer(String server) {
+        prefs.edit().putString(KEY_PULSE_SERVER, server == null ? "" : server.trim()).apply();
     }
 
     // ----------------------------------------------------------------- game ----

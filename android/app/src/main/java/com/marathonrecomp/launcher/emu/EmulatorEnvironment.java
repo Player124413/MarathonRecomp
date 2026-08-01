@@ -99,10 +99,36 @@ public final class EmulatorEnvironment {
 
         // Rendering: the game speaks Vulkan, so the driver is selected the standard way
         // through the loader's ICD mechanism.
-        env.put("SDL_VIDEODRIVER", "x11");
-        env.put("DISPLAY", ":0");
-        env.put("SDL_AUDIODRIVER", "pulseaudio");
-        env.put("PULSE_SERVER", "127.0.0.1");
+        // Display.
+        //
+        // The game is a desktop SDL program: it calls SDL_CreateWindow and expects a
+        // window system. Android provides neither X11 nor Wayland, so something has to
+        // stand in. DISPLAY is only meaningful once an X server is actually listening,
+        // and hardcoding ":0" when nothing is there just makes SDL fail with a confusing
+        // "could not open display" instead of a useful message.
+        //
+        // So: point SDL at X11 only when a server really is reachable (the user is
+        // running Termux:X11 or XServer XSDL alongside), and otherwise leave SDL to pick
+        // its own driver - GameWindow::Init falls back cleanly when the requested driver
+        // fails.
+        String display = prefs.xServerDisplay();
+
+        if (display != null && !display.isEmpty()) {
+            env.put("SDL_VIDEODRIVER", "x11");
+            env.put("DISPLAY", display);
+        }
+
+        // Audio: same reasoning. Only claim PulseAudio when the user pointed us at a
+        // server; otherwise let SDL fall back rather than block on a socket that is not
+        // there.
+        String pulse = prefs.pulseServer();
+
+        if (pulse != null && !pulse.isEmpty()) {
+            env.put("SDL_AUDIODRIVER", "pulseaudio");
+            env.put("PULSE_SERVER", pulse);
+        } else {
+            env.put("SDL_AUDIODRIVER", "dummy");
+        }
 
         if (prefs.isTurnipEnabled() && VulkanDriver.isInstalled(context)) {
             // Point the loader at the imported driver (Turnip) instead of the system one.

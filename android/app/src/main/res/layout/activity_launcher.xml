@@ -168,6 +168,25 @@
             android:text="@string/option_use_turnip"
             android:textColor="@color/text_primary" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/x_display_help"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <EditText
+            android:id="@+id/x_display"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/x_display_hint"
+            android:importantForAutofill="no"
+            android:inputType="text"
+            android:maxLines="1"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_secondary" />
+
         <Button
             android:id="@+id/install_driver_button"
             android:layout_width="match_parent"

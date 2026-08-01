@@ -3,11 +3,13 @@ package com.marathonrecomp.launcher.emu;
 import android.content.Context;
 import android.util.Log;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -104,13 +106,23 @@ public final class RootfsInstaller {
     /**
      * Unpacks a rootfs archive.
      *
-     * <p>Accepts a plain zip. Tar archives are deliberately <em>not</em> handled here:
-     * most published rootfs images are {@code .tar.xz}, which needs an XZ decoder the
-     * platform does not provide, so the UI asks for a zip instead of failing obscurely.</p>
+     * <p>The format is detected from the first bytes rather than the file name, because
+     * pickers rename things and users pass whatever they downloaded:</p>
+     *
+     * <ul>
+     *   <li><b>.tar.gz / .tgz</b> — what real rootfs images ship as. Handled through the
+     *       built-in gzip decoder and {@link TarExtractor}, so <b>symlinks survive</b>.
+     *       This matters more than it sounds: {@code libc.so.6} is normally a symlink to
+     *       the versioned library, so an archive format that drops links yields a rootfs
+     *       that fails the very check below.</li>
+     *   <li><b>.tar</b> — same reader, no decompression.</li>
+     *   <li><b>.zip</b> — accepted for convenience, but zip has no portable symlink
+     *       support, so a rootfs repacked as zip usually loses {@code libc.so.6}.</li>
+     * </ul>
      *
      * @return null on success, otherwise a human readable reason
      */
-    public static String install(Context context, InputStream zipStream) {
+    public static String install(Context context, InputStream rawStream) {
         File target = rootfsDir(context);
         File staging = new File(target.getParentFile(), "rootfs.tmp");
 
@@ -121,41 +133,35 @@ public final class RootfsInstaller {
         }
 
         try {
-            String canonicalStaging = staging.getCanonicalPath();
-            int files = 0;
+            // Sniff the magic bytes; mark/reset so nothing is consumed.
+            BufferedInputStream in = new BufferedInputStream(rawStream, 64 * 1024);
+            in.mark(4);
 
-            try (ZipInputStream zis = new ZipInputStream(zipStream)) {
-                ZipEntry entry;
+            byte[] magic = new byte[4];
+            int read = in.read(magic, 0, 4);
+            in.reset();
 
-                while ((entry = zis.getNextEntry()) != null) {
-                    File out = new File(staging, entry.getName());
-                    String canonical = out.getCanonicalPath();
-
-                    if (!canonical.equals(canonicalStaging)
-                            && !canonical.startsWith(canonicalStaging + File.separator)) {
-                        return "Unsafe entry in the archive: " + entry.getName();
-                    }
-
-                    if (entry.isDirectory()) {
-                        if (!out.exists() && !out.mkdirs()) {
-                            return "Cannot create " + out;
-                        }
-
-                        continue;
-                    }
-
-                    File parent = out.getParentFile();
-
-                    if (parent != null && !parent.exists() && !parent.mkdirs()) {
-                        return "Cannot create " + parent;
-                    }
-
-                    copy(zis, out);
-                    files++;
-                }
+            if (read < 2) {
+                return "The file is empty.";
             }
 
-            if (files == 0) {
+            boolean gzip = (magic[0] & 0xFF) == 0x1F && (magic[1] & 0xFF) == 0x8B;
+            boolean zip = magic[0] == 'P' && magic[1] == 'K';
+
+            int entries;
+
+            if (gzip) {
+                try (GZIPInputStream gz = new GZIPInputStream(in, 64 * 1024)) {
+                    entries = TarExtractor.extract(gz, staging, null);
+                }
+            } else if (zip) {
+                entries = extractZip(in, staging);
+            } else {
+                // Assume an uncompressed tar; the reader rejects it clearly if it is not.
+                entries = TarExtractor.extract(in, staging, null);
+            }
+
+            if (entries == 0) {
                 return "The archive is empty.";
             }
 
@@ -171,10 +177,15 @@ public final class RootfsInstaller {
             deleteRecursively(staging);
 
             if (findLibc(context) == null) {
-                return "No libc.so.6 found — this does not look like an x86_64 rootfs.";
+                String hint = zip
+                        ? " A .zip cannot store symlinks, and libc.so.6 usually is one —"
+                          + " use the original .tar.gz instead."
+                        : "";
+
+                return "No libc.so.6 found — this does not look like an x86_64 rootfs." + hint;
             }
 
-            Log.i(TAG, "Installed rootfs with " + files + " files");
+            Log.i(TAG, "Installed rootfs with " + entries + " entries");
             return null;
         } catch (IOException e) {
             Log.e(TAG, "Rootfs install failed", e);
@@ -182,6 +193,45 @@ public final class RootfsInstaller {
         } finally {
             deleteRecursively(staging);
         }
+    }
+
+    /** Zip fallback. Kept simple: zip cannot carry symlinks anyway. */
+    private static int extractZip(InputStream in, File staging) throws IOException {
+        String canonicalStaging = staging.getCanonicalPath();
+        int files = 0;
+
+        try (ZipInputStream zis = new ZipInputStream(in)) {
+            ZipEntry entry;
+
+            while ((entry = zis.getNextEntry()) != null) {
+                File out = new File(staging, entry.getName());
+                String canonical = out.getCanonicalPath();
+
+                if (!canonical.equals(canonicalStaging)
+                        && !canonical.startsWith(canonicalStaging + File.separator)) {
+                    throw new IOException("Unsafe entry in the archive: " + entry.getName());
+                }
+
+                if (entry.isDirectory()) {
+                    if (!out.exists() && !out.mkdirs()) {
+                        throw new IOException("Cannot create " + out);
+                    }
+
+                    continue;
+                }
+
+                File parent = out.getParentFile();
+
+                if (parent != null && !parent.exists() && !parent.mkdirs()) {
+                    throw new IOException("Cannot create " + parent);
+                }
+
+                copy(zis, out);
+                files++;
+            }
+        }
+
+        return files;
     }
 
     public static void uninstall(Context context) {

@@ -116,9 +116,24 @@ If the download reports *"not published for this build yet"*, run that workflow 
 attaches the archive to the `rootfs-v1` release, which is exactly where the app looks. The
 URL is derived from the repository the APK was built from, so a fork uses its own release.
 
-*Importing your own archive still works* (**Import x86_64 system libraries**) if you would
-rather supply a rootfs yourself — `.zip`, or the same `.tar.gz` layout.
+*Importing your own archive still works* — **`.tar.gz` is strongly preferred**. A `.zip`
+cannot store symlinks, and `libc.so.6` normally *is* one, so a rootfs repacked as zip
+usually arrives broken (the launcher detects exactly that and says so).
 </details>
+
+## Step 3c — A display (required to see anything)
+
+The game is a desktop SDL program: it opens a window. Android has no X server, so one has
+to be provided:
+
+1. Install **[Termux:X11](https://github.com/termux/termux-x11)** (or XServer XSDL).
+2. Start it and leave it running in the background.
+3. In the launcher, **Graphics → X display**, enter `:0`.
+
+Leave it empty and the game has nowhere to draw — it will open and close again. The
+launcher warns before launching in that state.
+
+---
 
 ## Step 4 — Optional but recommended: Turnip
 
@@ -145,7 +160,8 @@ disappear.
 | *"No MarathonRecomp executable"* | The zip has the data but not the executable, or it is named differently. |
 | *"Box64 is missing from this build"* | The APK was built without the box64 submodule. |
 | **Exit code 255** | The system libraries are missing — do Step 3b (one tap). |
-| Game exits immediately | Check the log at `filesDir/logs/game.log`; it captures the emulator's stdout and stderr. |
+| Game exits immediately | Usually no X display — see Step 3c. Otherwise use *Share the log* in the failure dialog. |
+| *"No libc.so.6 found"* on import | The archive was a `.zip`, which drops symlinks. Use the `.tar.gz`, or the automatic download. |
 
 ### About performance
 

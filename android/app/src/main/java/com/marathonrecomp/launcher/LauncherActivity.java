@@ -54,6 +54,7 @@ public class LauncherActivity extends AppCompatActivity {
     private CheckBox haptics;
     private CheckBox useTurnip;
     private TextView gpuStatus;
+    private android.widget.EditText xDisplay;
     private Button playButton;
     private Button removeGameButton;
 
@@ -81,6 +82,7 @@ public class LauncherActivity extends AppCompatActivity {
         haptics = findViewById(R.id.haptics);
         useTurnip = findViewById(R.id.use_turnip);
         gpuStatus = findViewById(R.id.gpu_status);
+        xDisplay = findViewById(R.id.x_display);
         playButton = findViewById(R.id.play_button);
         removeGameButton = findViewById(R.id.remove_game_button);
 
@@ -170,6 +172,13 @@ public class LauncherActivity extends AppCompatActivity {
 
         haptics.setChecked(prefs.isHapticsEnabled());
         haptics.setOnCheckedChangeListener((v, checked) -> prefs.setHapticsEnabled(checked));
+
+        xDisplay.setText(prefs.xServerDisplay());
+        xDisplay.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                prefs.setXServerDisplay(xDisplay.getText().toString());
+            }
+        });
 
         useTurnip.setChecked(prefs.isTurnipEnabled());
         useTurnip.setOnCheckedChangeListener((v, checked) -> prefs.setTurnipEnabled(checked));
@@ -448,8 +457,23 @@ public class LauncherActivity extends AppCompatActivity {
     }
 
     private void startGame() {
-        Intent intent = new Intent(this, GameActivity.class);
-        startActivity(intent);
+        // Save whatever is typed even if the field still has focus.
+        prefs.setXServerDisplay(xDisplay.getText().toString());
+
+        // Without an X server the game has nowhere to draw. Warn rather than let it
+        // close instantly with no explanation.
+        if (prefs.xServerDisplay().isEmpty()) {
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.warn_no_display_title)
+                    .setMessage(R.string.warn_no_display)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(R.string.action_start_anyway,
+                            (d, w) -> startActivity(new Intent(this, GameActivity.class)))
+                    .show();
+            return;
+        }
+
+        startActivity(new Intent(this, GameActivity.class));
     }
 
     // ----------------------------------------------------------------- status ----

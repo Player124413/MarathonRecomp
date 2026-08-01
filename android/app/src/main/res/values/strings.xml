@@ -115,8 +115,8 @@
     <string name="game_failed_message">The emulator exited with code %1$d.</string>
     <string name="game_failed_255">Code 255 is Box64\'s own \"could not start\" result. The usual cause is missing x86_64 system libraries: the build is a normal dynamically linked Linux program, so besides your game files it needs libc, libX11, glib and others for x86_64. Those come from an x86_64 rootfs, which this launcher does not yet bundle — see GETTING_STARTED.md.</string>
     <string name="action_share_log">Share the log</string>
-    <string name="error_rootfs_missing">The x86_64 system libraries are missing.\n\nThe game is a normal dynamically linked Linux program: besides your game files it needs x86_64 builds of libc, libX11, glib and others. Android cannot supply them (its own libraries are ARM64/bionic), so import a small x86_64 rootfs once: Emulation backend → Import x86_64 system libraries (.zip). Without it Box64 stops with code 255.</string>
-    <string name="action_install_rootfs">Import x86_64 system libraries (.zip)</string>
+    <string name="error_rootfs_missing">The x86_64 system libraries are missing.\n\nThe game is a normal dynamically linked Linux program: besides your game files it needs x86_64 builds of libc, libX11, glib and others. Android cannot supply them (its own libraries are ARM64/bionic), so tap \"Download the system libraries automatically\" once. Without it Box64 stops with code 255.</string>
+    <string name="action_install_rootfs">Import system libraries (.tar.gz / .zip)</string>
     <string name="rootfs_installed">System libraries: installed (%1$s)</string>
     <string name="rootfs_missing">System libraries: not installed — the game cannot start without them.</string>
     <string name="rootfs_installing">Unpacking the system libraries…</string>
@@ -127,4 +127,9 @@
     <string name="rootfs_download_failed">Download failed: %1$s</string>
     <string name="rootfs_download_done">System libraries installed.</string>
     <string name="rootfs_help">The game needs x86_64 versions of libc, libX11 and glib, which Android does not have. Tap below and the launcher fetches and installs them itself (about 45 MB, once).</string>
+    <string name="x_display_help">The game opens a desktop window, and Android has no X server of its own. To see the picture, install Termux:X11 (or XServer XSDL), start it, and enter its display below — usually :0. Leave empty to let SDL choose (the game will most likely fail to open a window).</string>
+    <string name="x_display_hint">X display, e.g. :0</string>
+    <string name="warn_no_display_title">No display configured</string>
+    <string name="warn_no_display">No X display is set, so the game has nowhere to draw and will probably close immediately.\n\nInstall Termux:X11, start it, then enter :0 in the Graphics section.\n\nStart anyway?</string>
+    <string name="action_start_anyway">Start anyway</string>
 </resources>
