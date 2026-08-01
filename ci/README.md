@@ -76,10 +76,11 @@ reason above):
 
 ---
 
-## `build-rootfs.yml` — the x86_64 system libraries
+## `build-rootfs.yml` — the x86_64 system libraries (already active)
 
-Builds the rootfs the Android launcher downloads automatically, and attaches it to a
-release (default tag `rootfs-v1`, which is where the app looks).
+Lives in `.github/workflows/`. Builds the rootfs the Android launcher downloads
+automatically, and attaches it to a release (default tag `rootfs-v1`, which is where the
+app looks).
 
 **Run it once** — Actions → *Build the x86_64 rootfs* → *Run workflow*. Until then the
 in-app download reports that the libraries have not been published for this build yet.
