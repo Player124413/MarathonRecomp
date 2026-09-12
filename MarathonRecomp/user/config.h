@@ -78,7 +78,10 @@ enum class EChannelConfiguration : uint32_t
 enum class EGraphicsAPI : uint32_t
 {
     Auto,
-#ifdef MARATHON_RECOMP_D3D12
+#if defined(MARATHON_RECOMP_D3D12) || defined(__ANDROID__)
+    // Android declares the enumerator even when no D3D12 renderer is compiled in, so that the
+    // renderer chosen in the launcher round-trips through config.toml instead of being silently
+    // reset. Video::CreateHostDevice is what decides whether the request can be honoured.
     D3D12,
 #endif
 #ifdef MARATHON_RECOMP_METAL

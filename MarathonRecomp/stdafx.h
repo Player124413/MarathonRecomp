@@ -13,7 +13,11 @@ using Microsoft::WRL::ComPtr;
 #include <pwd.h>
 #endif
 
-#ifdef MARATHON_RECOMP_D3D12
+// MARATHON_RECOMP_D3D12 selects the D3D12 renderer; the two sub-feature macros below are added
+// by the build only when that renderer talks to the Windows runtime. Structured exception
+// handling around device creation is an MSVC feature, and the DXC-based spec constant linker
+// needs the dxcompiler library, which a vkd3d-proton based Android build does not ship.
+#ifdef MARATHON_RECOMP_D3D12_DXC
 #include <dxcapi.h>
 #endif
 

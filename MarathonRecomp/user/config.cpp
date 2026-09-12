@@ -311,7 +311,7 @@ CONFIG_DEFINE_ENUM_TEMPLATE(EVoiceLanguage)
 CONFIG_DEFINE_ENUM_TEMPLATE(EGraphicsAPI)
 {
     { "Auto", EGraphicsAPI::Auto },
-#ifdef MARATHON_RECOMP_D3D12
+#if defined(MARATHON_RECOMP_D3D12) || defined(__ANDROID__)
     { "D3D12",  EGraphicsAPI::D3D12 },
 #endif
 #ifdef MARATHON_RECOMP_METAL

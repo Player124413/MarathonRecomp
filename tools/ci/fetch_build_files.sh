@@ -80,3 +80,22 @@ for f in default.xex shader.arc shader_lt.arc; do
 done
 echo "Game files -> $game_dir"
 echo "::endgroup::"
+
+# Optional payloads: bundled Turnip Vulkan drivers and a DirectX 12 (vkd3d) runtime.
+# They are looked up as folders anywhere in the archive (a zip usually nests the whole
+# upload one level deep), then flattened into <outdir>/drivers and <outdir>/vkd3d, which
+# is what the workflow copies into the APK.
+echo "::group::Optional bundled libraries"
+for folder in drivers vkd3d; do
+    src="$(find "$outdir/extracted" -type d -name "$folder" | head -1 || true)"
+    if [ -z "$src" ]; then
+        echo "no $folder/ folder in the archive; skipping"
+        continue
+    fi
+
+    mkdir -p "$outdir/$folder"
+    find "$src" -maxdepth 1 -type f -name '*.so' -exec cp -f {} "$outdir/$folder/" \;
+    count="$(ls -1 "$outdir/$folder" 2>/dev/null | wc -l | tr -d ' ')"
+    echo "$folder: $count .so file(s) -> $outdir/$folder"
+done
+echo "::endgroup::"

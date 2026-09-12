@@ -65,6 +65,26 @@
     <string-array name="render_mode_labels">
         <item>Авто (рекомендуется)</item><item>GMEM</item><item>Sysmem</item>
     </string-array>
+    <string-array name="renderer_labels">
+        <item>Vulkan (нативный, рекомендуется)</item><item>DirectX 12 через vkd3d (экспериментально)</item>
+    </string-array>
+
+    <string name="launcher_renderer">Рендерер (графический API)</string>
+    <string name="launcher_renderer_vulkan_info">Vulkan — то, чем этот билд рендерит сейчас: игра обращается к драйверу GPU напрямую, включая встроенный Turnip на Adreno. Оставьте этот выбор, если разработчик не попросил проверить что-то другое.</string>
+    <string name="launcher_renderer_dx12_info">DirectX 12 — не второй драйвер. Игра обращалась бы к библиотеке-переводчику (vkd3d), которая превращает каждый вызов обратно в Vulkan на том же драйвере GPU, то есть ещё один слой между игрой и железом. Оно не добавляет возможностей драйверу, не ускоряет рендеринг и может показать другие графические баги. Нужен vkd3d-рантайм, которого в этом APK пока нет.</string>
+    <string name="launcher_renderer_dx12_title">DirectX 12 недоступен</string>
+    <string name="launcher_renderer_dx12_no_runtime">Выбран DirectX 12, но vkd3d-рантайм не установлен, поэтому игра запустится на Vulkan.\n\nДля DirectX 12 на Android нужна отдельная arm64-библиотека vkd3d (сборка vkd3d-proton). Скачать её приложение не может, а в этом APK её пока нет. Положите .so в папку DirectX 12 и запустите снова — или оставьте Vulkan, он проверен.</string>
+    <string name="launcher_renderer_dx12_broken">Выбран DirectX 12, но в прошлый запуск установленный vkd3d-рантайм использовать не удалось: либо в этом билде нет D3D12-рендерера, либо библиотека отклонена. Игра запустится на Vulkan.</string>
+    <string name="launcher_renderer_switch_vulkan">Использовать Vulkan</string>
+    <string name="launcher_renderer_launch_anyway">Все равно запустить</string>
+    <string name="launcher_vkd3d_folder">Папка DirectX 12 (vkd3d)</string>
+    <string name="launcher_vkd3d_missing">vkd3d-рантайм не установлен. Положите arm64-сборку vkd3d (.so) в папку DirectX 12 и запустите игру один раз, чтобы её проверили.</string>
+    <string name="launcher_vkd3d_unprobed">Найден vkd3d-рантайм. Он будет загружен и проверен при запуске игры.</string>
+    <string name="launcher_vkd3d_ready">DirectX 12 рантайм готов: %1$s</string>
+    <string name="launcher_vkd3d_bad">DirectX 12 рантайм отклонён: %1$s</string>
+    <string name="launcher_vkd3d_no_backend">В этом билде нет D3D12-рендерера, поэтому опция пока не может работать. Используется Vulkan.</string>
+    <string name="error_vkd3d_folder">Не удалось подготовить папку DirectX 12: %1$s</string>
+    <string name="vkd3d_folder_readme">Папка рантайма DirectX 12 (vkd3d).\n\nПоложите сюда один arm64 shared object, если хотите проверить рендерер DirectX 12:\n  libvkd3d_proton.so (подойдёт любое имя, начинающееся с libvkd3d или libd3d12)\n\nЭто должна быть 64-битная ELF-библиотека для Android на ARM64. Сборки для Windows (d3d12.dll) и для настольного Linux здесь не загрузятся.\n\nИгра загружает файл через dlopen, проверяет наличие D3D12CreateDevice или vkd3d_create_device и записывает результат в vkd3d_status.txt на уровень выше. Лаунчер показывает этот результат рядом с пунктом «Рендерер».\n\nВажно: на Android DirectX 12 переводится обратно в Vulkan и работает на том же драйвере GPU, что и нативный путь. Ожидайте такую же скорость или медленнее, возможны графические баги. Если картинка сломалась — верните Vulkan.</string>
 
     <string name="documents_save_title">Сохранения Marathon Recompiled</string>
     <string name="documents_save_summary">Данные сохранений (SYS-DATA) и сохранения модов</string>

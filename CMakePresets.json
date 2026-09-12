@@ -192,6 +192,7 @@
                 "ANDROID_STL": "c++_static",
                 "MARATHON_RECOMP_ANDROID": "ON",
                 "MARATHON_RECOMP_D3D12": "OFF",
+                "MARATHON_RECOMP_D3D12_VKD3D": "OFF",
                 "MARATHON_RECOMP_HOST_XENON_RECOMP": "${sourceDir}/out/build/linux-host-tools/tools/XenonRecomp/XenonRecomp",
                 "MARATHON_RECOMP_HOST_XENOS_RECOMP": "${sourceDir}/out/build/linux-host-tools/tools/XenosRecomp/XenosRecomp",
                 "MARATHON_RECOMP_HOST_FILE_TO_C": "${sourceDir}/out/build/linux-host-tools/tools/file_to_c/file_to_c",

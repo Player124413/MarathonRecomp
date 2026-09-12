@@ -256,6 +256,25 @@ jobs:
           ls -la "$JNI_DIR"
           sha256sum "$JNI_DIR"/*.so
 
+      # Optional: a DirectX 12 (vkd3d) runtime, taken from the same build-files zip
+      # the Turnip drivers come from (vkd3d/*.so). Anything packaged into jniLibs is
+      # unpacked by Android into the app's nativeLibraryDir, which is exactly where
+      # os/android/vkd3d_android.cpp looks first, so no other wiring is needed. The
+      # library is only *available* to users though: the D3D12 renderer itself has to
+      # be compiled in with -DMARATHON_RECOMP_D3D12_VKD3D=ON (see
+      # docs/DX12-VKD3D-ANDROID.md), otherwise the launcher reports that this build has
+      # no DirectX 12 and the game stays on Vulkan.
+      - name: Bundle vkd3d runtime (optional)
+        run: |
+          JNI_DIR="android-apk/app/src/main/jniLibs/arm64-v8a"
+          if ls ci-build-files/vkd3d/*.so >/dev/null 2>&1; then
+            cp ci-build-files/vkd3d/*.so "$JNI_DIR/"
+            echo "Bundled vkd3d runtime(s):"
+            ls -la "$JNI_DIR"
+          else
+            echo "No vkd3d/*.so in the build files; the APK ships without a DirectX 12 runtime."
+          fi
+
       # ── APK ─────────────────────────────────────────────────────────────────
       - name: Assemble debug APK
         working-directory: android-apk

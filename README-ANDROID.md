@@ -80,7 +80,9 @@ through a public link:
    shader_lt.arc
    ```
    (Optional: add `drivers/*.so` to bundle Turnip driver builds. Without them
-   the app uses the system Vulkan driver.)
+   the app uses the system Vulkan driver. Add `vkd3d/*.so` to bundle an arm64
+   DirectX 12-over-Vulkan runtime; it is then offered in the launcher, see
+   [docs/DX12-VKD3D-ANDROID.md](docs/DX12-VKD3D-ANDROID.md).)
 2. Upload the zip somewhere public — Google Drive or HuggingFace both work.
 3. Run the **Build Android APK** workflow: in the repo, go to *Actions → Build Android APK → Run workflow* and paste the link into the `build_files_url` field. Alternatively set it once as the repository variable `BUILD_FILES_URL` (*Settings → Secrets and variables → Actions → Variables*).
 
@@ -186,7 +188,15 @@ Processed packages move to `installed/` and are selected automatically. See the
 
 ## Configuration
 
-- The launcher exposes the Vulkan driver, Turnip render mode, skip-intro and diagnostic options.
+- The launcher exposes the renderer (Vulkan, or DirectX 12 via vkd3d — experimental and opt-in),
+  the Vulkan driver, Turnip render mode, skip-intro and diagnostic options.
+- **DirectX 12 on Android is not a second driver.** It would run the recompiled D3D12 renderer on
+  top of a vkd3d library that translates every call back into Vulkan on the same GPU driver, one
+  layer further from the hardware: no extra driver features, no expected FPS gain, and its own set
+  of possible graphical issues. No public build of that library for Android exists, so shipping
+  APKs contain no DirectX 12 renderer at all — the launcher then says so and the game starts on
+  Vulkan. The full status, requirements and step-by-step plan are in
+  [docs/DX12-VKD3D-ANDROID.md](docs/DX12-VKD3D-ANDROID.md).
 - In-game options (Input → touch controls/camera/stick, Video → resolution scale, driver, profiler) apply immediately or after restart as noted in-game.
 - Touch-control layout is arranged from the launcher (**Controls → Arrange touch controls**).
 

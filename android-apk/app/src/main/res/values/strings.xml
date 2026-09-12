@@ -65,6 +65,26 @@
     <string-array name="render_mode_labels">
         <item>Auto (recommended)</item><item>GMEM</item><item>Sysmem</item>
     </string-array>
+    <string-array name="renderer_labels">
+        <item>Vulkan (native, recommended)</item><item>DirectX 12 via vkd3d (experimental)</item>
+    </string-array>
+
+    <string name="launcher_renderer">Renderer (graphics API)</string>
+    <string name="launcher_renderer_vulkan_info">Vulkan is what this build renders with: the recompiled game talks to the GPU driver directly, including the bundled Turnip driver on Adreno. Keep it unless a developer asked you to test something else.</string>
+    <string name="launcher_renderer_dx12_info">DirectX 12 is not a second driver. The game would speak D3D12 to a translation library (vkd3d), which turns every call back into Vulkan on the same GPU driver - one extra layer between the game and the hardware. It adds no driver features, does not make rendering faster and can show different graphical bugs. It also needs a vkd3d runtime that is not part of this APK yet.</string>
+    <string name="launcher_renderer_dx12_title">DirectX 12 is not available</string>
+    <string name="launcher_renderer_dx12_no_runtime">You selected DirectX 12, but no vkd3d runtime is installed, so the game will start on Vulkan.\n\nDirectX 12 on Android needs a separate arm64 vkd3d library (a vkd3d-proton build). The app cannot download it and this APK does not ship one yet. Put the .so into the DirectX 12 folder and start again, or keep Vulkan, which is the tested path.</string>
+    <string name="launcher_renderer_dx12_broken">You selected DirectX 12, but the last start could not use the installed vkd3d runtime: either this build has no DirectX 12 renderer compiled in, or the library was rejected. The game will start on Vulkan.</string>
+    <string name="launcher_renderer_switch_vulkan">Use Vulkan</string>
+    <string name="launcher_renderer_launch_anyway">Start anyway</string>
+    <string name="launcher_vkd3d_folder">DirectX 12 folder (vkd3d)</string>
+    <string name="launcher_vkd3d_missing">No DirectX 12 runtime installed. Put an arm64 vkd3d build (.so) into the DirectX 12 folder, then start the game once so it can be checked.</string>
+    <string name="launcher_vkd3d_unprobed">DirectX 12 runtime found. It is loaded and verified when the game starts.</string>
+    <string name="launcher_vkd3d_ready">DirectX 12 runtime ready: %1$s</string>
+    <string name="launcher_vkd3d_bad">DirectX 12 runtime was rejected: %1$s</string>
+    <string name="launcher_vkd3d_no_backend">This build contains no DirectX 12 renderer, so the option cannot work yet. Vulkan is used instead.</string>
+    <string name="error_vkd3d_folder">Could not prepare the DirectX 12 folder: %1$s</string>
+    <string name="vkd3d_folder_readme">DirectX 12 (vkd3d) runtime folder.\n\nPut a single arm64 shared object here if you want to test the DirectX 12 renderer:\n  libvkd3d_proton.so (any name starting with libvkd3d or libd3d12 works)\n\nThe file must be a 64-bit ARM ELF library built for Android. Builds for Windows (d3d12.dll) or for desktop Linux cannot be loaded here.\n\nThe game loads it with dlopen, checks that it exports D3D12CreateDevice or vkd3d_create_device, and writes the result to vkd3d_status.txt one level up. The launcher shows that result next to the Renderer option.\n\nImportant: on Android DirectX 12 is translated back into Vulkan, so it runs on the same GPU driver as the native path. It is expected to be equal or slower, and graphical bugs are possible. If the game looks wrong, switch back to Vulkan.</string>
 
     <string name="documents_save_title">Marathon Recompiled saves</string>
     <string name="documents_save_summary">Save data (SYS-DATA) and per-mod saves</string>

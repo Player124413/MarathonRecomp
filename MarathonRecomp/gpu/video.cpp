@@ -43,6 +43,7 @@
 #include <os/process.h>
 #if defined(__ANDROID__)
 #include <os/android/storage_android.h>
+#include <os/android/vkd3d_android.h>
 #include <os/android/vulkan_driver_android.h>
 #endif
 
@@ -1989,9 +1990,30 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     GameWindow::Init(sdlVideoDriver);
 
 #if defined(MARATHON_RECOMP_D3D12)
+#if defined(__ANDROID__)
+    // Android has no D3D12 runtime of its own: the renderer can only run against a vkd3d
+    // library installed with the app. Prefer it only when both the build and the runtime are
+    // there, otherwise start on Vulkan straight away instead of failing device creation first.
+    os::android::ReportDirectX12Availability(Config::GraphicsAPI == EGraphicsAPI::D3D12);
+    g_backend = (Config::GraphicsAPI == EGraphicsAPI::D3D12 && os::android::IsDirectX12Available())
+        ? Backend::D3D12
+        : Backend::VULKAN;
+#else
     g_backend = (DetectWine() || Config::GraphicsAPI == EGraphicsAPI::Vulkan) ? Backend::VULKAN : Backend::D3D12;
+#endif
 #elif defined(MARATHON_RECOMP_METAL)
     g_backend = Config::GraphicsAPI == EGraphicsAPI::Vulkan ? Backend::VULKAN : Backend::METAL;
+#elif defined(__ANDROID__)
+    // No D3D12 renderer in this APK (the build was configured without MARATHON_RECOMP_D3D12),
+    // so the DirectX 12 entry in the launcher cannot be honoured here. Report what was searched
+    // for and normalise the setting, which keeps config.toml truthful for the next start. No
+    // library is loaded on this path: nothing could use it.
+    os::android::ReportDirectX12Availability(false);
+    if (Config::GraphicsAPI == EGraphicsAPI::D3D12)
+    {
+        LOG_WARNING("DirectX 12 was selected, but this build contains no D3D12 renderer; continuing with Vulkan.");
+        Config::GraphicsAPI = EGraphicsAPI::Vulkan;
+    }
 #endif
 
     // Attempt to create the possible backends using a vector of function pointers. Whichever succeeds first will be the chosen API.
@@ -2011,8 +2033,22 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
         allowVulkanRedirection = false;
     }
 
+#if defined(__ANDROID__)
+    // g_backend is only D3D12 when a usable vkd3d runtime was found, so this also keeps a phone
+    // that inherited the setting from another device out of a doomed device creation.
+    if (g_backend == Backend::D3D12)
+    {
+        interfaceFunctions.push_back(CreateD3D12Interface);
+        interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
+    }
+    else
+    {
+        interfaceFunctions.push_back(CreateVulkanInterfaceWrapper);
+    }
+#else
     interfaceFunctions.push_back((g_backend == Backend::VULKAN) ? CreateVulkanInterfaceWrapper : CreateD3D12Interface);
     interfaceFunctions.push_back((g_backend == Backend::VULKAN) ? CreateD3D12Interface : CreateVulkanInterfaceWrapper);
+#endif
 #elif defined(MARATHON_RECOMP_METAL)
     interfaceFunctions.push_back((g_backend == Backend::VULKAN) ? CreateVulkanInterfaceWrapper : CreateMetalInterface);
     interfaceFunctions.push_back((g_backend == Backend::VULKAN) ? CreateMetalInterface : CreateVulkanInterfaceWrapper);
@@ -2024,7 +2060,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     {
         RenderInterfaceFunction* interfaceFunction = interfaceFunctions[i];
 
-#ifdef MARATHON_RECOMP_D3D12
+#ifdef MARATHON_RECOMP_D3D12_SEH
         // Wrap the device creation in __try/__except to survive from driver crashes.
         __try
 #endif
@@ -2080,7 +2116,7 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
                 break;
             }
         }
-#ifdef MARATHON_RECOMP_D3D12
+#ifdef MARATHON_RECOMP_D3D12_SEH
         __except (EXCEPTION_EXECUTE_HANDLER)
         {
             if (graphicsApiRetry)
@@ -4718,7 +4754,7 @@ static RenderShader* GetOrLinkShader(GuestShader* guestShader, uint32_t specCons
         shader = guestShader->linkedShaders[specConstants].get();
     }
 
-#ifdef MARATHON_RECOMP_D3D12
+#ifdef MARATHON_RECOMP_D3D12_DXC
     if (shader == nullptr)
     {
         static Mutex g_compiledSpecConstantLibraryBlobMutex;

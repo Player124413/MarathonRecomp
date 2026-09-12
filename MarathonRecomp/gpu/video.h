@@ -328,7 +328,9 @@ struct GuestShader : GuestResource
     std::unique_ptr<RenderShader> shader;
     struct ShaderCacheEntry* shaderCacheEntry = nullptr;
     ankerl::unordered_dense::map<uint32_t, std::unique_ptr<RenderShader>> linkedShaders;
-#ifdef MARATHON_RECOMP_D3D12
+#ifdef MARATHON_RECOMP_D3D12_DXC
+    // Only the Windows D3D12 renderer links shader blobs at run time, so these members (and the
+    // dxcompiler header they come from) are not declared on other D3D12 hosts such as vkd3d.
     std::vector<ComPtr<IDxcBlob>> shaderBlobs;
     ComPtr<IDxcBlobEncoding> libraryBlob;
 #endif

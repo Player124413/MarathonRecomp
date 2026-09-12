@@ -70,4 +70,36 @@ final class AppStorage {
                 new File(gameRoot, "driver_import") }
             : new File[] { driverImportDir(context), new File(gameRoot, "driver_import") };
     }
+
+    /**
+     * Drop-in folder for a DirectX 12 runtime (an arm64 build of vkd3d). Kept separate from
+     * driver_import so a Vulkan ICD is never mistaken for it: the two are loaded by different
+     * code (libadrenotools versus dlopen in os/android/vkd3d_android.cpp).
+     */
+    static File vkd3dImportDir(Context context) {
+        return new File(transferRoot(context), "vkd3d_import");
+    }
+
+    /**
+     * All folders os/android/vkd3d_android.cpp scans for a runtime, in the same order, so the
+     * launcher never reports a file the game would not find. The internal names come first
+     * because a runtime unpacked by an earlier version lives there.
+     */
+    static File[] vkd3dImportDirs(Context context) {
+        File internal = context.getFilesDir();
+        File gameRoot = activeGameRoot(context);
+        File media = mediaBase(context);
+        java.util.List<File> dirs = new java.util.ArrayList<>();
+        dirs.add(new File(internal, "vkd3d"));
+        dirs.add(new File(internal, "vkd3d_import"));
+        dirs.add(vkd3dImportDir(context));
+        if (media != null) dirs.add(new File(media, "vkd3d_import"));
+        dirs.add(new File(gameRoot, "vkd3d_import"));
+        return dirs.toArray(new File[0]);
+    }
+
+    /** Last verdict from the native runtime probe, written at each game start. */
+    static File vkd3dStatusFile(Context context) {
+        return new File(transferRoot(context), "vkd3d_status.txt");
+    }
 }

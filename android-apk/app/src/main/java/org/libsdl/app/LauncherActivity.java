@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -51,6 +52,14 @@ public final class LauncherActivity extends Activity {
         "Auto", "System", "Bundled", "Imported"
     };
     private static final String[] RENDER_MODE_VALUES = {"Auto", "GMEM", "Sysmem"};
+    /** Values of the native [Video] GraphicsAPI key; index 0 is what every build can run. */
+    private static final String[] RENDERER_VALUES = { "Vulkan", "D3D12" };
+    private static final int RENDERER_VULKAN = 0;
+    private static final int RENDERER_DIRECTX12 = 1;
+    /** Must match g_vkd3dLibraryNames in MarathonRecomp/os/android/vkd3d_android.cpp. */
+    private static final String[] VKD3D_LIBRARY_NAMES = {
+        "libvkd3d_proton.so", "libvkd3d-proton.so", "libvkd3d.so", "libd3d12.so", "d3d12.so"
+    };
     private static final String[] DLC_DIRECTORIES = {
         "Additional Episode - Sonic Boss Attack", "Additional Episode - Shadow Boss Attack",
         "Additional Episode - Silver Boss Attack", "Additional Episode - Team Attack Amigo",
@@ -66,6 +75,9 @@ public final class LauncherActivity extends Activity {
     private Button updateButton;
     private Spinner driverSpinner;
     private Spinner renderSpinner;
+    private Spinner rendererSpinner;
+    private TextView rendererDescription;
+    private TextView vkd3dStatus;
     private CheckBox skipIntro;
     private CheckBox validation;
     private CheckBox gfxCapture;
@@ -131,6 +143,25 @@ public final class LauncherActivity extends Activity {
         page.addView(updates);
 
         LinearLayout graphics = collapsibleCard(page, R.string.launcher_graphics, "expand_graphics", false);
+        // Renderer first: it decides which API the whole session uses, and the DirectX 12
+        // entry needs a runtime the APK may not carry, so its status line belongs right here.
+        rendererSpinner = settingSpinner(graphics, R.string.launcher_renderer,
+            R.array.renderer_labels);
+        rendererDescription = statusText();
+        graphics.addView(rendererDescription);
+        vkd3dStatus = statusText();
+        graphics.addView(vkd3dStatus);
+        rendererSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                updateRendererDescription();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                updateRendererDescription();
+            }
+        });
         driverStatus = statusText();
         graphics.addView(driverStatus);
         driverSpinner = settingSpinner(graphics, R.string.launcher_driver,
@@ -152,6 +183,7 @@ public final class LauncherActivity extends Activity {
         driverButtons.addView(button(R.string.launcher_import_driver, view -> chooseDriver()), weighted());
         driverButtons.addView(button(R.string.launcher_driver_folder, view -> openFiles("transfer")), weighted());
         graphics.addView(driverButtons);
+        graphics.addView(button(R.string.launcher_vkd3d_folder, view -> openVkd3dFolder()));
 
         // The runtime touch settings (on-screen controls, camera and stick) now live
         // in the in-game options menu; only the layout editor stays here as it launches
@@ -218,6 +250,7 @@ public final class LauncherActivity extends Activity {
         diagnosticsStatus.setText(log.isFile()
             ? getString(R.string.launcher_log_found, formatBytes(log.length()))
             : getString(R.string.launcher_log_missing));
+        refreshVkd3dStatus();
     }
 
     private InstallState inspectInstallation() {
@@ -272,6 +305,14 @@ public final class LauncherActivity extends Activity {
 
     private void loadSettings() {
         Map<String, String> config = readConfig(AppStorage.configFile(this));
+        String renderer = config.get("Video.GraphicsAPI");
+        // Desktop configs (and older Android ones) may hold "Auto"; on Android that has always
+        // meant Vulkan, so the launcher shows the resolved choice rather than a third state.
+        if (renderer != null && renderer.replace("\"", "").trim().equalsIgnoreCase("Auto")) {
+            renderer = "Vulkan";
+        }
+        select(rendererSpinner, renderer, RENDERER_VALUES);
+        updateRendererDescription();
         select(driverSpinner, config.get("Video.VulkanDriver"), DRIVER_VALUES);
         select(renderSpinner, config.get("Video.RenderMode"), RENDER_MODE_VALUES);
         applyDriverPresetToLauncher();
@@ -284,6 +325,7 @@ public final class LauncherActivity extends Activity {
     private boolean saveSettings() {
         applyDriverPresetToLauncher();
         LinkedHashMap<String, String> values = new LinkedHashMap<>();
+        values.put("Video.GraphicsAPI", quote(rendererValue()));
         values.put("Video.VulkanDriver", quote(DRIVER_VALUES[driverSpinner.getSelectedItemPosition()]));
         values.put("Video.RenderMode", quote(RENDER_MODE_VALUES[renderSpinner.getSelectedItemPosition()]));
         values.put("Codes.SkipIntroLogos", Boolean.toString(skipIntro.isChecked()));
@@ -301,6 +343,12 @@ public final class LauncherActivity extends Activity {
     }
 
     private void launchGame(boolean editControls) {
+        launchGame(editControls, false);
+    }
+
+    /** {@code rendererConfirmed} skips the DirectX 12 availability prompt (answered already). */
+    private void launchGame(boolean editControls, boolean rendererConfirmed) {
+        if (!rendererConfirmed && !confirmDirectX12(editControls)) return;
         if (!saveSettings()) return;
         InstallState current = inspectInstallation();
         if (!current.ready && !hasStagedGamePackages()) {
@@ -836,6 +884,145 @@ public final class LauncherActivity extends Activity {
         // Keep render-mode selection independent for Auto/System/Imported.
         if (driverSpinner == null || renderSpinner == null) return;
         renderSpinner.setEnabled(true);
+    }
+
+    /**
+     * One-line explanation of the selected renderer under the spinner. A DirectX 12 choice on
+     * Android is a translation layer on top of the same Vulkan driver, not a second driver, so
+     * the text says what it changes and - equally important - what it does not.
+     */
+    private void updateRendererDescription() {
+        if (rendererSpinner == null || rendererDescription == null) return;
+        boolean directX12 = rendererSelectedIndex() == RENDERER_DIRECTX12;
+        rendererDescription.setText(directX12
+            ? R.string.launcher_renderer_dx12_info
+            : R.string.launcher_renderer_vulkan_info);
+        rendererDescription.setTextColor(directX12 && !hasVkd3dRuntime()
+            ? Color.rgb(180, 45, 35) : Color.DKGRAY);
+        refreshVkd3dStatus();
+    }
+
+    private int rendererSelectedIndex() {
+        if (rendererSpinner == null) return RENDERER_VULKAN;
+        int index = rendererSpinner.getSelectedItemPosition();
+        return index >= 0 && index < RENDERER_VALUES.length ? index : RENDERER_VULKAN;
+    }
+
+    private String rendererValue() {
+        return RENDERER_VALUES[rendererSelectedIndex()];
+    }
+
+    private boolean directX12Selected() {
+        return rendererSpinner != null && rendererSelectedIndex() == RENDERER_DIRECTX12;
+    }
+
+    /** Any vkd3d library the game could load: shipped in the APK or dropped into an import folder. */
+    private File findVkd3dRuntime() {
+        List<File> directories = new ArrayList<>();
+        if (getApplicationInfo() != null && getApplicationInfo().nativeLibraryDir != null) {
+            directories.add(new File(getApplicationInfo().nativeLibraryDir));
+        }
+        directories.addAll(Arrays.asList(AppStorage.vkd3dImportDirs(this)));
+
+        for (File directory : directories) {
+            if (!directory.isDirectory()) continue;
+            for (String name : VKD3D_LIBRARY_NAMES) {
+                File candidate = new File(directory, name);
+                if (candidate.isFile() && candidate.length() > 0) return candidate;
+            }
+            // Community builds carry version suffixes, so accept the same prefixes the native
+            // probe uses (see LooksLikeVkd3dLibrary in os/android/vkd3d_android.cpp).
+            File[] loose = directory.listFiles(file -> {
+                String lower = file.getName().toLowerCase(Locale.ROOT);
+                return file.isFile() && file.length() > 0 && lower.endsWith(".so")
+                    && (lower.startsWith("libvkd3d") || lower.startsWith("vkd3d")
+                        || lower.startsWith("libd3d12") || lower.startsWith("d3d12"));
+            });
+            if (loose != null && loose.length > 0) {
+                Arrays.sort(loose);
+                return loose[0];
+            }
+        }
+        return null;
+    }
+
+    private boolean hasVkd3dRuntime() {
+        return findVkd3dRuntime() != null;
+    }
+
+    /** Token before '|' in the status line the native probe writes at game start; "" if unknown. */
+    private static String vkd3dStatusToken(String status) {
+        int bar = status.indexOf('|');
+        return bar >= 0 ? status.substring(0, bar) : status;
+    }
+
+    /** Shows the last probed verdict so the option is not a guess based on file names alone. */
+    private void refreshVkd3dStatus() {
+        if (vkd3dStatus == null) return;
+        String status = readFirstLine(AppStorage.vkd3dStatusFile(this));
+        String token = vkd3dStatusToken(status);
+        String detail = status.length() > token.length() ? status.substring(token.length() + 1) : "";
+
+        if (token.equals("no-renderer-in-build")) {
+            vkd3dStatus.setText(R.string.launcher_vkd3d_no_backend);
+            vkd3dStatus.setTextColor(Color.rgb(180, 45, 35));
+        } else if (token.equals("ready")) {
+            vkd3dStatus.setText(getString(R.string.launcher_vkd3d_ready, detail));
+            vkd3dStatus.setTextColor(Color.rgb(25, 120, 55));
+        } else if (token.equals("bad-runtime")) {
+            vkd3dStatus.setText(getString(R.string.launcher_vkd3d_bad, detail));
+            vkd3dStatus.setTextColor(Color.rgb(180, 45, 35));
+        } else if (hasVkd3dRuntime()) {
+            vkd3dStatus.setText(R.string.launcher_vkd3d_unprobed);
+            vkd3dStatus.setTextColor(Color.DKGRAY);
+        } else {
+            vkd3dStatus.setText(R.string.launcher_vkd3d_missing);
+            vkd3dStatus.setTextColor(Color.DKGRAY);
+        }
+    }
+
+    /**
+     * DirectX 12 only runs when a vkd3d runtime is installed. The game would quietly fall back to
+     * Vulkan, which is the right behaviour but the wrong surprise, so ask before the first frame.
+     */
+    private boolean confirmDirectX12(final boolean editControls) {
+        if (!directX12Selected()) return true;
+
+        File runtime = findVkd3dRuntime();
+        String token = vkd3dStatusToken(readFirstLine(AppStorage.vkd3dStatusFile(this)));
+        boolean blocked = runtime == null || token.equals("no-renderer-in-build") || token.equals("bad-runtime");
+        if (!blocked) return true;
+
+        new AlertDialog.Builder(this)
+            .setTitle(R.string.launcher_renderer_dx12_title)
+            .setMessage(runtime == null ? R.string.launcher_renderer_dx12_no_runtime
+                : R.string.launcher_renderer_dx12_broken)
+            .setPositiveButton(R.string.launcher_renderer_switch_vulkan, (dialog, which) -> {
+                rendererSpinner.setSelection(RENDERER_VULKAN);
+                launchGame(editControls, true);
+            })
+            .setNegativeButton(R.string.launcher_renderer_launch_anyway, (dialog, which) -> launchGame(editControls, true))
+            .setNeutralButton(android.R.string.cancel, null)
+            .show();
+        return false;
+    }
+
+    /** Creates the vkd3d drop folder (with a readme) and shows it in the system Files app. */
+    private void openVkd3dFolder() {
+        File directory = AppStorage.vkd3dImportDir(this);
+        try {
+            if (!directory.isDirectory() && !directory.mkdirs()) {
+                throw new IOException("Cannot create " + directory);
+            }
+            try (OutputStreamWriter writer = new OutputStreamWriter(
+                    new FileOutputStream(new File(directory, "readme.txt")), StandardCharsets.UTF_8)) {
+                writer.write(getString(R.string.vkd3d_folder_readme));
+            }
+        } catch (IOException exception) {
+            showError(getString(R.string.error_vkd3d_folder, exception.getMessage()));
+            return;
+        }
+        openFiles("transfer");
     }
 
     private TextView statusText() {

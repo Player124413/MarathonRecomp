@@ -116,6 +116,7 @@ elseif (ANDROID)
         "os/android/storage_android.cpp"
         "os/android/user_android.cpp"
         "os/android/version_android.cpp"
+        "os/android/vkd3d_android.cpp"
         "os/android/vulkan_driver_android.cpp"
     )
 elseif (CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -464,6 +465,14 @@ if (MARATHON_RECOMP_D3D12)
     find_package(directx12-agility CONFIG REQUIRED)
     target_compile_definitions(MarathonRecomp PRIVATE MARATHON_RECOMP_D3D12)
 
+    if (WIN32)
+        # Structured exception handling around D3D12 device creation (MSVC only) and the DXC
+        # spec constant linker, which needs the dxcompiler runtime that only the Windows
+        # deployment ships. Kept out of the generic D3D12 define so other D3D12 hosts (e.g. a
+        # vkd3d-proton based Android build) can compile the same renderer without them.
+        target_compile_definitions(MarathonRecomp PRIVATE MARATHON_RECOMP_D3D12_SEH MARATHON_RECOMP_D3D12_DXC)
+    endif()
+
     file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/D3D12)
     add_custom_command(TARGET MarathonRecomp POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> $<TARGET_FILE_DIR:MarathonRecomp>/D3D12
@@ -490,6 +499,64 @@ if (WIN32)
         winmm
         windowsapp
     )
+endif()
+
+if (ANDROID)
+    # ------------------------------------------------------------------
+    # DirectX 12 through a vkd3d runtime (experimental, off by default)
+    #
+    # Android has no D3D12 driver, so the only way the recompiled D3D12 renderer can run here is
+    # against a translation library that turns ID3D12* calls into Vulkan calls. Upstream
+    # vkd3d-proton builds that as d3d12.dll for Wine or as a development-only native library, and
+    # neither is usable on Android out of the box: DXGI's CreateSwapChainForHwnd (used by plume's
+    # D3D12 backend) has no ANativeWindow equivalent, and vkd3d's hard driver requirements
+    # (Vulkan 1.3, VK_EXT_robustness2, VK_KHR_push_descriptor, full descriptor indexing) are not
+    # met by the mobile drivers this port targets.
+    #
+    # This option therefore only wires up the build; enabling it deliberately fails the configure
+    # step until every prerequisite is in place, so no one can ship an APK that advertises
+    # DirectX 12 and then dies on device. docs/DX12-VKD3D-ANDROID.md lists the work items.
+    option(MARATHON_RECOMP_D3D12_VKD3D "Build the D3D12 renderer for Android against a vkd3d runtime." OFF)
+    set(MARATHON_RECOMP_VKD3D_ROOT "" CACHE PATH "Prefix of an Android vkd3d build (include/d3d12.h, lib/libvkd3d_proton.so)")
+
+    if (MARATHON_RECOMP_D3D12_VKD3D)
+        # Reuses the Windows plumbing that keys off this variable: the DXIL blobs in
+        # compile_shader() below and the g_*_dxil headers video.cpp includes.
+        set(MARATHON_RECOMP_D3D12 ON)
+
+        if (NOT MARATHON_RECOMP_VKD3D_ROOT)
+            message(FATAL_ERROR
+                "MARATHON_RECOMP_D3D12_VKD3D needs MARATHON_RECOMP_VKD3D_ROOT to point at an arm64 Android "
+                "vkd3d build. There is no upstream one - see docs/DX12-VKD3D-ANDROID.md (step 1).")
+        endif()
+
+        if (NOT EXISTS "${MARATHON_RECOMP_VKD3D_ROOT}/include/d3d12.h")
+            message(FATAL_ERROR
+                "No d3d12.h under ${MARATHON_RECOMP_VKD3D_ROOT}/include. The D3D12 headers "
+                "(directx-headers) must be provided for the Android build; vcpkg does not ship them for ANDROID.")
+        endif()
+
+        if (NOT EXISTS "${MARATHON_RECOMP_VKD3D_ROOT}/lib/libvkd3d_proton.so")
+            message(FATAL_ERROR
+                "No ${MARATHON_RECOMP_VKD3D_ROOT}/lib/libvkd3d_proton.so. That library has to be packaged into "
+                "the APK (android-apk/.../jniLibs/arm64-v8a) or dropped into a vkd3d_import folder at run time.")
+        endif()
+
+        if (NOT PLUME_D3D12_ANDROID_ENABLED)
+            message(FATAL_ERROR
+                "plume builds its D3D12 backend for WIN32 only, and that backend still creates the swap chain "
+                "with CreateSwapChainForHwnd. Port it to Android first (ANativeWindow surface + a DXGI shim) and "
+                "set PLUME_D3D12_ANDROID_ENABLED=ON - see docs/DX12-VKD3D-ANDROID.md (steps 2 and 3).")
+        endif()
+
+        target_compile_definitions(MarathonRecomp PRIVATE MARATHON_RECOMP_D3D12 MARATHON_RECOMP_VKD3D)
+        target_include_directories(MarathonRecomp PRIVATE "${MARATHON_RECOMP_VKD3D_ROOT}/include")
+
+        # The runtime is resolved at run time (os/android/vkd3d_android.cpp) from the app's
+        # native library directory or a vkd3d_import folder, so nothing is linked against it:
+        # an APK with the renderer built in must still boot on devices without the library.
+        message(STATUS "MarathonRecomp - D3D12 renderer enabled for Android via vkd3d (experimental).")
+    endif()
 endif()
 
 target_link_libraries(MarathonRecomp PRIVATE
