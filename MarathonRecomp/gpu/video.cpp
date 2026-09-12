@@ -2343,8 +2343,22 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     case ETripleBuffering::Auto:
         switch (g_backend) {
         case Backend::VULKAN:
+#if defined(__ANDROID__)
+            // Android wants the third image for the opposite reason. No Android Vulkan driver is
+            // required to implement VK_KHR_present_wait (none of the ones this port targets do), so
+            // the frame limiter cannot pace itself against the compositor and the game blocks in
+            // vkAcquireNextImageKHR instead, which plume calls with an infinite timeout. With only
+            // two images that couples the render thread to SurfaceFlinger one-for-one: a single
+            // late compositor frame turns into a stall the CPU cannot cover, and it shows up as
+            // periodic hitching rather than a lower average. A third image gives the acquire
+            // somewhere to go, which is also Android's own guidance (minImageCount + 1). The cost
+            // is up to one extra frame of input lag while vsync is on, so the launcher keeps an
+            // explicit "Triple buffering" switch for players who would rather have the latency.
+            bufferCount = 3;
+#else
             // Defaulting to 3 is fine if presentWait as supported, as the maximum frame latency allowed is only 1.
             bufferCount = g_device->getCapabilities().presentWait ? 3 : 2;
+#endif
             break;
         case Backend::D3D12:
             // Defaulting to 3 is fine on D3D12 thanks to flip discard model.
@@ -2374,6 +2388,12 @@ bool Video::CreateHostDevice(const char *sdlVideoDriver, bool graphicsApiRetry)
     g_swapChain = g_queue->createSwapChain(swapChainDesc);
     g_swapChain->setVsyncEnabled(Config::VSync);
     g_swapChainValid = !g_swapChain->needsResize();
+
+    // One line that answers "did the request actually stick" without a rebuild: plume clamps the
+    // requested image count to the surface limits, and present-wait support decides whether the
+    // frame limiter can pace against the compositor at all. Both change behaviour on jank.
+    LOGF("Presentation: {} swap chain image(s) requested of the device, present wait {}, vsync {}, max frame latency {}.",
+        bufferCount, g_capabilities.presentWait, Config::VSync, Config::MaxFrameLatency);
 
 #if defined(__ANDROID__)
     // A custom loader reaching dlopen/device creation is not sufficient: only a usable WSI

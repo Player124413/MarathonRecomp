@@ -2196,8 +2196,16 @@ namespace plume {
             return;
         }
 
+        // "maxImageCount == 0" means the surface places no upper limit on the image count, so a
+        // request for more buffers than minImageCount has to be honoured rather than clamped down
+        // to minImageCount. Treating zero as "one below min" collapsed every triple buffering
+        // request to two images, which is what silently disabled triple buffering on Vulkan.
+        const uint32_t imageCountLimit = (surfaceCapabilities.maxImageCount != 0)
+            ? surfaceCapabilities.maxImageCount
+            : std::max(desc.textureCount, surfaceCapabilities.minImageCount);
+
         // Make sure maxImageCount is never below minImageCount, as it's allowed to be zero.
-        surfaceCapabilities.maxImageCount = std::max(surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);
+        surfaceCapabilities.maxImageCount = std::max(surfaceCapabilities.minImageCount, imageCountLimit);
 
         // Clamp the requested buffer count between the bounds of the surface capabilities.
         this->desc.textureCount = std::clamp(desc.textureCount, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount);

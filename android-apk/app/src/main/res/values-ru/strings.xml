@@ -68,6 +68,9 @@
     <string-array name="renderer_labels">
         <item>Vulkan (нативный, рекомендуется)</item><item>DirectX 12 через vkd3d (экспериментально)</item>
     </string-array>
+    <string-array name="triple_buffer_labels">
+        <item>Авто (рекомендуется)</item><item>Вкл (плавнее)</item><item>Выкл (меньше задержка)</item>
+    </string-array>
 
     <string name="launcher_renderer">Рендерер (графический API)</string>
     <string name="launcher_renderer_vulkan_info">Vulkan — то, чем этот билд рендерит сейчас: игра обращается к драйверу GPU напрямую, включая встроенный Turnip на Adreno. Оставьте этот выбор, если разработчик не попросил проверить что-то другое.</string>
@@ -77,6 +80,10 @@
     <string name="launcher_renderer_dx12_broken">Выбран DirectX 12, но в прошлый запуск установленный vkd3d-рантайм использовать не удалось: либо в этом билде нет D3D12-рендерера, либо библиотека отклонена. Игра запустится на Vulkan.</string>
     <string name="launcher_renderer_switch_vulkan">Использовать Vulkan</string>
     <string name="launcher_renderer_launch_anyway">Все равно запустить</string>
+    <string name="launcher_triple_buffering">Очередь кадров (тройная буферизация)</string>
+    <string name="launcher_triple_buffering_auto_info">Авто: три кадра в очереди. Именно это и нужно на Android: мобильный драйвер не умеет сообщать игре, когда кадр попал на экран. Оставляйте этот вариант, если только игра не стала медленнее реагировать на нажатия. Применяется со следующего запуска.</string>
+    <string name="launcher_triple_buffering_on_info">Вкл: три кадра в очереди. Если система задержала вывод кадра, рендер не встаёт в ожидание — подтормаживание сглаживается, а не показывается. Цена — до одного лишнего кадра задержки управления при включённой вертикальной синхронизации. Применяется со следующего запуска.</string>
+    <string name="launcher_triple_buffering_off_info">Выкл: два кадра в очереди. Самый короткий отклик на управление, но каждый кадр ждёт дисплей, и любая задержка вывода превращается в заметный рывок. Ставьте, только если управление кажется вялым. Применяется со следующего запуска.</string>
     <string name="launcher_vkd3d_folder">Папка DirectX 12 (vkd3d)</string>
     <string name="launcher_vkd3d_missing">vkd3d-рантайм не установлен. Положите arm64-сборку vkd3d (.so) в папку DirectX 12 и запустите игру один раз, чтобы её проверили.</string>
     <string name="launcher_vkd3d_unprobed">Найден vkd3d-рантайм. Он будет загружен и проверен при запуске игры.</string>

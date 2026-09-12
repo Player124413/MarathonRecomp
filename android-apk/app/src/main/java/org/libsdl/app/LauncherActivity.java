@@ -52,6 +52,11 @@ public final class LauncherActivity extends Activity {
         "Auto", "System", "Bundled", "Imported"
     };
     private static final String[] RENDER_MODE_VALUES = {"Auto", "GMEM", "Sysmem"};
+    /** Values of the native [Video] TripleBuffering key; Auto resolves per backend+driver. */
+    private static final String[] TRIPLE_BUFFER_VALUES = { "Auto", "On", "Off" };
+    private static final int TRIPLE_BUFFER_AUTO = 0;
+    private static final int TRIPLE_BUFFER_ON = 1;
+    private static final int TRIPLE_BUFFER_OFF = 2;
     /** Values of the native [Video] GraphicsAPI key; index 0 is what every build can run. */
     private static final String[] RENDERER_VALUES = { "Vulkan", "D3D12" };
     private static final int RENDERER_VULKAN = 0;
@@ -76,6 +81,8 @@ public final class LauncherActivity extends Activity {
     private Spinner driverSpinner;
     private Spinner renderSpinner;
     private Spinner rendererSpinner;
+    private Spinner tripleBufferSpinner;
+    private TextView tripleBufferDescription;
     private TextView rendererDescription;
     private TextView vkd3dStatus;
     private CheckBox skipIntro;
@@ -184,6 +191,26 @@ public final class LauncherActivity extends Activity {
         driverButtons.addView(button(R.string.launcher_driver_folder, view -> openFiles("transfer")), weighted());
         graphics.addView(driverButtons);
         graphics.addView(button(R.string.launcher_vkd3d_folder, view -> openVkd3dFolder()));
+
+        // Presentation queue depth. The native side asks the Vulkan driver for three swap chain
+        // images instead of two, which is what stops a single late compositor frame from stalling
+        // the render thread; players who would rather have that frame of latency back need a way
+        // to say so, and the in-game Video menu does not carry this key at all.
+        tripleBufferSpinner = settingSpinner(graphics, R.string.launcher_triple_buffering,
+            R.array.triple_buffer_labels);
+        tripleBufferDescription = statusText();
+        graphics.addView(tripleBufferDescription);
+        tripleBufferSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                updateTripleBufferDescription();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                updateTripleBufferDescription();
+            }
+        });
 
         // The runtime touch settings (on-screen controls, camera and stick) now live
         // in the in-game options menu; only the layout editor stays here as it launches
@@ -315,6 +342,8 @@ public final class LauncherActivity extends Activity {
         updateRendererDescription();
         select(driverSpinner, config.get("Video.VulkanDriver"), DRIVER_VALUES);
         select(renderSpinner, config.get("Video.RenderMode"), RENDER_MODE_VALUES);
+        select(tripleBufferSpinner, config.get("Video.TripleBuffering"), TRIPLE_BUFFER_VALUES);
+        updateTripleBufferDescription();
         applyDriverPresetToLauncher();
         skipIntro.setChecked(Boolean.parseBoolean(config.get("Codes.SkipIntroLogos")));
         validation.setChecked(new File(getFilesDir(), "turnip/vk_layer_settings.txt").isFile());
@@ -328,6 +357,7 @@ public final class LauncherActivity extends Activity {
         values.put("Video.GraphicsAPI", quote(rendererValue()));
         values.put("Video.VulkanDriver", quote(DRIVER_VALUES[driverSpinner.getSelectedItemPosition()]));
         values.put("Video.RenderMode", quote(RENDER_MODE_VALUES[renderSpinner.getSelectedItemPosition()]));
+        values.put("Video.TripleBuffering", quote(TRIPLE_BUFFER_VALUES[tripleBufferSelectedIndex()]));
         values.put("Codes.SkipIntroLogos", Boolean.toString(skipIntro.isChecked()));
         try {
             patchConfig(AppStorage.configFile(this), values);
@@ -900,6 +930,27 @@ public final class LauncherActivity extends Activity {
         rendererDescription.setTextColor(directX12 && !hasVkd3dRuntime()
             ? Color.rgb(180, 45, 35) : Color.DKGRAY);
         refreshVkd3dStatus();
+    }
+
+    /**
+     * One-line explanation of the swap chain depth. Deliberately says what the third image buys
+     * (the render thread no longer waits on the compositor) and what it costs (up to one frame of
+     * input lag), because "triple buffering" on its own reads like a pure performance option.
+     */
+    private void updateTripleBufferDescription() {
+        if (tripleBufferSpinner == null || tripleBufferDescription == null) return;
+        int index = tripleBufferSelectedIndex();
+        tripleBufferDescription.setText(index == TRIPLE_BUFFER_OFF
+            ? R.string.launcher_triple_buffering_off_info
+            : (index == TRIPLE_BUFFER_ON
+                ? R.string.launcher_triple_buffering_on_info
+                : R.string.launcher_triple_buffering_auto_info));
+    }
+
+    private int tripleBufferSelectedIndex() {
+        if (tripleBufferSpinner == null) return TRIPLE_BUFFER_AUTO;
+        int index = tripleBufferSpinner.getSelectedItemPosition();
+        return index >= 0 && index < TRIPLE_BUFFER_VALUES.length ? index : TRIPLE_BUFFER_AUTO;
     }
 
     private int rendererSelectedIndex() {

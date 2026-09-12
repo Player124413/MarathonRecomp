@@ -197,6 +197,13 @@ Processed packages move to `installed/` and are selected automatically. See the
   APKs contain no DirectX 12 renderer at all — the launcher then says so and the game starts on
   Vulkan. The full status, requirements and step-by-step plan are in
   [docs/DX12-VKD3D-ANDROID.md](docs/DX12-VKD3D-ANDROID.md).
+- **Frame queue (triple buffering).** On Android the game asks the Vulkan driver for three swap
+  chain images instead of two. Mobile drivers cannot report when a frame reached the screen, so
+  the game waits on the acquire instead, and with two images one late system frame becomes two
+  visible hitches. The cost is up to one extra frame of input lag while vsync is on; the
+  launcher's *Graphics → Frame queue* switch turns it back off for players who prefer the latency.
+  Details, the profiler rows to read and what was deliberately not ported from the D3D12 path:
+  [docs/ANDROID-VULKAN-TUNING.md](docs/ANDROID-VULKAN-TUNING.md).
 - In-game options (Input → touch controls/camera/stick, Video → resolution scale, driver, profiler) apply immediately or after restart as noted in-game.
 - Touch-control layout is arranged from the launcher (**Controls → Arrange touch controls**).
 

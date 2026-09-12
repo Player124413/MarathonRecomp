@@ -68,6 +68,9 @@
     <string-array name="renderer_labels">
         <item>Vulkan (native, recommended)</item><item>DirectX 12 via vkd3d (experimental)</item>
     </string-array>
+    <string-array name="triple_buffer_labels">
+        <item>Auto (recommended)</item><item>On (smoother)</item><item>Off (lower latency)</item>
+    </string-array>
 
     <string name="launcher_renderer">Renderer (graphics API)</string>
     <string name="launcher_renderer_vulkan_info">Vulkan is what this build renders with: the recompiled game talks to the GPU driver directly, including the bundled Turnip driver on Adreno. Keep it unless a developer asked you to test something else.</string>
@@ -77,6 +80,10 @@
     <string name="launcher_renderer_dx12_broken">You selected DirectX 12, but the last start could not use the installed vkd3d runtime: either this build has no DirectX 12 renderer compiled in, or the library was rejected. The game will start on Vulkan.</string>
     <string name="launcher_renderer_switch_vulkan">Use Vulkan</string>
     <string name="launcher_renderer_launch_anyway">Start anyway</string>
+    <string name="launcher_triple_buffering">Frame queue (triple buffering)</string>
+    <string name="launcher_triple_buffering_auto_info">Auto: three frames in flight on Vulkan, which is what Android wants, because a mobile driver cannot tell the game when a frame actually reached the screen. Leave it here unless the game feels slow to react to touch. Applied on the next start.</string>
+    <string name="launcher_triple_buffering_on_info">On: three frames in flight. A late frame from the system compositor no longer stalls the renderer, so hitches get absorbed instead of shown; the price is up to one extra frame of input lag while vsync is on. Applied on the next start.</string>
+    <string name="launcher_triple_buffering_off_info">Off: two frames in flight. The shortest control response, but every frame waits for the display, so a single late compositor frame appears as a visible stutter. Choose it only if the game feels sluggish to touch. Applied on the next start.</string>
     <string name="launcher_vkd3d_folder">DirectX 12 folder (vkd3d)</string>
     <string name="launcher_vkd3d_missing">No DirectX 12 runtime installed. Put an arm64 vkd3d build (.so) into the DirectX 12 folder, then start the game once so it can be checked.</string>
     <string name="launcher_vkd3d_unprobed">DirectX 12 runtime found. It is loaded and verified when the game starts.</string>
